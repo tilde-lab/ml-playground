@@ -107,7 +107,7 @@ results_linear = model_linear.evaluate(total)
 model_linear.summary()
 
 # DECISION TREE MODEL
-train_d, test_d = total.random_split(0.8)
+train_d, test_d = total.random_split(0.85)
 model_decision = tc.decision_tree_regression.create(
     train_d, target="Value", features=["APF", "Wiener"]
 )
@@ -127,7 +127,7 @@ featureboosted = model_boosted.get_feature_importance()
 model_boosted.summary()
 
 # RANDOM FOREST MODEL
-train_r, test_r = total.random_split(0.8)
+train_r, test_r = total.random_split(0.85)
 model_random = tc.random_forest_regression.create(
     train_r, target="Value", features=["APF", "Wiener"]
 )
