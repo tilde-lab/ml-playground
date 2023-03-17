@@ -4,6 +4,7 @@ import pandas as pd
 from ase.data import chemical_symbols, covalent_radii
 import turicreate as tc
 from turicreate import SFrame
+from utils import *
 
 # Display options settings
 np.set_printoptions(suppress=True)
@@ -61,19 +62,6 @@ structure = structure.sort_values("Phase", ascending=True)
 structure = structure.drop_duplicates(subset="Phase", keep="first")
 seebeck = seebeck.sort_values("Phase", ascending=True)
 seebeck = seebeck.drop_duplicates(subset="Phase", keep="first")
-
-# Defining descriptors
-def get_APF(ase_obj):
-    volume = 0.0
-    for atom in ase_obj:
-        volume += (
-            4 / 3 * np.pi * covalent_radii[chemical_symbols.index(atom.symbol)] ** 3
-        )
-    return volume / abs(np.linalg.det(ase_obj.cell))
-
-
-def get_Wiener(ase_obj):
-    return np.sum(ase_obj.get_all_distances()) * 0.5
 
 
 # Converting structure dataframe to list for easier descriptor calculation
