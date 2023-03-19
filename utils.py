@@ -1,6 +1,9 @@
 import numpy as np
-import pandas as pd
 from ase.data import chemical_symbols, covalent_radii
+from ase import neighborlist
+from scipy import sparse
+from scipy.sparse import csr_matrix
+import math
 
 # Defining descriptors
 
@@ -18,7 +21,7 @@ def get_Wiener(ase_obj):
     return np.sum(ase_obj.get_all_distances()) * 0.5
 
 
-def getRandic(ase_obj):
+def get_Randic(ase_obj):
     cutoff = neighborlist.natural_cutoffs(ase_obj)
     neighborList = neighborlist.NeighborList(
         cutoff, self_interaction=False, bothways=True
@@ -45,7 +48,7 @@ def getRandic(ase_obj):
 # Evaluation metrics: R2 coefficient
 
 
-def r2_score(model, total):
+def get_R2score(model, total):
     return (
         len(total)
         * (model.training_rmse**2)

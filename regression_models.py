@@ -1,10 +1,9 @@
 from mpds_client import MPDSDataRetrieval
 import numpy as np
 import pandas as pd
-from ase.data import chemical_symbols, covalent_radii
 import turicreate as tc
 from turicreate import SFrame
-from utils import *
+from utils import get_APF, get_Wiener, get_Randic, get_R2score
 
 # Display options settings
 np.set_printoptions(suppress=True)
