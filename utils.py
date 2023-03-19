@@ -48,9 +48,7 @@ def get_Randic(ase_obj):
 # Evaluation metrics: R2 coefficient
 
 
-def get_R2score(model, total):
-    return (
-        len(total)
-        * (model.training_rmse**2)
-        / sum((total["Value"] - total["Value"].mean()) ** 2)
+def get_R2score(prediction, total):
+    return sum((prediction - total["Value"].mean()) ** 2) / sum(
+        (total["Value"] - total["Value"].mean()) ** 2
     )
