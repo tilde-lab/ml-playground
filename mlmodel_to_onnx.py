@@ -3,24 +3,17 @@ import coremltools
 import onnxmltools
 import onnx
 
-# Export the model created in Turi Create into CoreML format
-model_decision.export_coreml("decision.mlmodel")
 
-# Update the input name and path for your CoreML model
-input_coreml_model = "decision.mlmodel"
+def core_onnx(core_model):
+    """
+    Converts CoreML model into ONNX format
+    Returns:
+    	ONNX ML model 
+    """
+    c_model = str(core_model)
+    coreml_model = coremltools.utils.load_spec(c_model)
+    onnx_model = onnxmltools.convert_coreml(coreml_model)
+    #onnxmltools.utils.save_model(onnx_model, 'model.onnx')
+    return onnx_model
 
-# Change this path to the output name and path for the ONNX model
-output_onnx_model = "decision.onnx"
 
-# Load your CoreML model
-coreml_model = coremltools.utils.load_spec(input_coreml_model)
-
-# Convert the CoreML model into ONNX
-onnx_model = onnxmltools.convert_coreml(coreml_model)
-
-# Save as protobuf
-onnxmltools.utils.save_model(onnx_model, output_onnx_model)
-
-# Load onnx model and check
-onnx_model = onnx.load("decision.onnx")
-onnx.checker.check_model(onnx_model)
