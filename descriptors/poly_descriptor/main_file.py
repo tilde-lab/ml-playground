@@ -5,7 +5,7 @@ import turicreate as tc
 from turicreate import SFrame
 import pickle
 
-from utils import get_APF, get_Wiener, get_Randic, get_R2score
+from descriptors.utils import get_APF, get_Wiener
 
 # Display options settings
 np.set_printoptions(suppress=True)

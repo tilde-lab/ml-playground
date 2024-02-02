@@ -12,20 +12,17 @@ Requires 2 command-line arguments.
 import sys
 import onnx
 import numpy
-import turicreate as tc
-from turicreate import SFrame
 import onnxruntime as rt
 from struct_utils import (
     detect_format,
     poscar_to_ase,
     optimade_to_ase,
     refine,
-    get_formula,
 )
 from cif_utils import cif_to_ase
 
 sys.path.append("../")
-from utils import get_APF, get_Wiener, get_Randic, get_R2score
+from descriptors.utils import get_APF, get_Wiener
 
 # Printing Docstring information for wrong number of command-line arguments
 if len(sys.argv) != 3:

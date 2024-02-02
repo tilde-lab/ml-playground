@@ -20,7 +20,7 @@ def optimade_to_ase(data, cnt):
 client = OptimadeClient()
 query = 'chemical_formula_reduced="H2O"'
 
-folder_path = "./"
+folder_path = "/"
 cnt = 0
 cif_file_path = f"test_water_mol{cnt}.cif"
 file_path = os.path.join(folder_path, cif_file_path)
