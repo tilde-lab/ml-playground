@@ -1,0 +1,68 @@
+{
+  "attributes": {
+    "immutable_id": "agm2000000924",
+    "last_modified": "2023-11-16T06:57:59Z",
+    "elements": ["H", "O"],
+    "nelements": 2,
+    "elements_ratios": [0.6666666666666666, 0.3333333333333333],
+    "chemical_formula_descriptive": "H4 O2",
+    "chemical_formula_reduced": "H2O",
+    "chemical_formula_hill": "None",
+    "chemical_formula_anonymous": "A2B",
+    "dimension_types": [1, 1, 1],
+    "nperiodic_dimensions": 3,
+    "lattice_vectors": [
+      [2.69606232, 0.75955747, 0.0],
+      [1.75302848, 4.02965585, 0.0],
+      [0.0, 0.0, 21.39662315]
+    ],
+    "cartesian_site_positions": [
+      [2.1382785491892435, 0.6575992349687627, 8.753482203146806],
+      [1.2907212753320536, 0.7238936680912901, 15.150105397630428],
+      [3.3455657590093817, 3.4983644731859367, 9.692559880374546],
+      [2.921118212136219, 1.9593777718499248, 10.91191705943369],
+      [1.072735094478908, 1.6572040037210263, 10.671569219522205],
+      [3.0503706536391255, 4.2361517519452, 9.010235475926095]
+    ],
+    "nsites": 6,
+    "species": [
+      {
+        "name": "O",
+        "chemical_symbols": ["O"],
+        "concentration": [1.0],
+        "mass": "None",
+        "original_name": "None",
+        "attached": "None",
+        "nattached": "None"
+      },
+      {
+        "name": "H",
+        "chemical_symbols": ["H"],
+        "concentration": [1.0],
+        "mass": "None",
+        "original_name": "None",
+        "attached": "None",
+        "nattached": "None"
+      }
+    ],
+    "species_at_sites": ["H", "H", "H", "H", "O", "O"],
+    "assemblies": "None",
+    "structure_features": [],
+    "_alexandria_dos_ef": -0.0006243,
+    "_alexandria_space_group": 1,
+    "_alexandria_hull_distance": 0.9356793,
+    "_alexandria_energy_corrected": -25.556812,
+    "_alexandria_charges": [0.706, 0.38, 0.634, 0.704, 4.96, 5.112],
+    "_alexandria_band_gap_direct": 1.5184,
+    "_alexandria_formation_energy_per_atom": -0.44690904,
+    "_alexandria_magnetization": 1.9741653,
+    "_alexandria_energy": -24.15223194,
+    "_alexandria_magnetic_moments": [-0.002, 0.38, -0.004, -0.005, 0.551, 0.282],
+    "_alexandria_stress_tensor": [[0.20143346, 0.35417292, 0.02102842], [0.35417292, 1.03887, 0.06196844], [0.02102839, 0.06196844, -0.99850434]],
+    "_alexandria_forces": [[-0.00287401, -0.00269676, 0.00032364], [0.00026836, 0.00019807, -0.00295918], [-0.00125372, 0.00331283, -0.00487033], [0.00361307, 0.00101473, 1.97e-06], [-0.00158632, 0.00066363, 0.00253636], [0.00183262, -0.0024925, 0.00496755]],
+    "_alexandria_xc_functional": "gga_x_pbe + gga_c_pbe",
+    "_alexandria_band_gap": 1.214,
+    "_alexandria_phase_separation_energy": -0.44690904,
+    "_alexandria_decomposition": " H2O "
+  }
+}
