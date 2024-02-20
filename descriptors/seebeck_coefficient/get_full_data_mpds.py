@@ -1,6 +1,7 @@
-from mpds_client import MPDSDataTypes
-from mpds_client import MPDSDataRetrieval
 import json
+
+from mpds_client import MPDSDataTypes, MPDSDataRetrieval
+
 
 def collect_data_in_dict(answer: dict, result):
     """
@@ -31,7 +32,7 @@ def save_to_json(file_path: str, file_name: str, data):
     with open((file_path + file_name), "w") as file:
         file.write(str(data))
 
-api_key = r"e6oHeSwFUv6xp7uJPRihZK1IZrFtZ4pe4hT6Xv6ivKwa2xos"
+api_key = "..."  # insert your key here...
 file_result = "PEER_REVIEWED_AB_INITIO_all_data.json"
 file_path = '/Users/alina/PycharmProjects/ml-playground/examples/'
 
