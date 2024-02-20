@@ -2,53 +2,53 @@ from mpds_client import MPDSDataTypes
 from mpds_client import MPDSDataRetrieval
 import json
 
-api_key = r"xr8qTrKa8E0363VhCTX8TIFuVXQisAE8tXUDqs0TvyQTLBTJ"
-file_thermoelectric_power = "just_thermoelectric_power.json"
-file_result = "data_seebeck.json"
-file_path = "/root/projects/ml-playground/descriptors/thermoelectric_power/"
-
-save_phase_id = []
-result = {}
-
-client = MPDSDataRetrieval(api_key=api_key)
-client.dtype = MPDSDataTypes.ALL
-client.dtype = MPDSDataTypes.MACHINE_LEARNING
-
-
-def collect_data_in_dict(answer: list, dict_data):
+def collect_data_in_dict(answer: dict, result):
+    """
+    saves data in form of dictionary, as follows:
+    {formula: {phase_id: {properties}}}
+    """
     for data in answer:
         if data != []:
             key = data[1]
+            # key must be a string
             phase_id = str(data[0])
 
-            if key not in dict_data:
-                continue
+            if phase_id not in save_phase_id:
+                save_phase_id.append(phase_id)
+
+            if key not in result:
+                result[key] = {phase_id: {data[4]: data[6]}}
             else:
-                if phase_id in dict_data[key]:
-                    dict_data[key][phase_id][data[4]] = data[6]
+                if phase_id in result[key]:
+                    result[key][phase_id][data[4]] = data[6]
                 else:
-                    continue
+                    result[key][phase_id] = {}
+                    result[key][phase_id][data[4]] = data[6]
 
-    return dict_data
-
+    print(f"Number of different phases: {len(save_phase_id)}")
 
 def save_to_json(file_path: str, file_name: str, data):
     with open((file_path + file_name), "w") as file:
         file.write(str(data))
 
+api_key = r"e6oHeSwFUv6xp7uJPRihZK1IZrFtZ4pe4hT6Xv6ivKwa2xos"
+file_result = "PEER_REVIEWED_AB_INITIO_all_data.json"
+file_path = '/Users/alina/PycharmProjects/ml-playground/examples/'
 
-with open(
-        "/root/projects/ml-playground/descriptors/thermoelectric_power/just_thermoelectric_power.json", "r"
-) as my_file:
+save_phase_id = []
+result = {}
+
+client = MPDSDataRetrieval(api_key=api_key)
+client.dtype = MPDSDataTypes.PEER_REVIEWED
+client.dtype = MPDSDataTypes.AB_INITIO
+
+with open("/Users/alina/PycharmProjects/ml-playground/examples/PEER_REVIEWED_AB_INITIO_seebeck.json", "r") as my_file:
     data_json = my_file.read()
 
 result = json.loads(data_json)
-total_result = result.copy()
+total_result = result
 
 structures = result.keys()
-
-for cnt, formula in enumerate(structures):
-    [save_phase_id.append(int(i)) for i in list(result[formula].keys())]
 
 print(f'Total structures: {len(structures)}')
 
@@ -59,12 +59,11 @@ for cnt, formula in enumerate(structures):
         answer_for_specific_struct = client.get_data(
             search={"formulae": formula}, phases=phase_id
         )
-        total_result = collect_data_in_dict(answer_for_specific_struct, total_result)
+        collect_data_in_dict(answer_for_specific_struct, total_result)
     except:
         phase_id = list(result[formula].keys())
-        print(f'Faileddd to request data for {formula}, {phase_id}')
+        print(f'Failed to request data for {formula}, {phase_id}')
     if cnt % 50 == 0:
-        save_to_json(file_path, file_result, data=total_result)
         print(f'------------SAVE data for {cnt} structures------------')
 
 save_to_json(file_path, file_result, data=total_result)

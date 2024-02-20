@@ -1,16 +1,16 @@
 from mpds_client import MPDSDataTypes
 from mpds_client import MPDSDataRetrieval
 
-api_key = r"xr8qTrKa8E0363VhCTX8TIFuVXQisAE8tXUDqs0TvyQTLBTJ"
-file_thermoelectric_power = "just_thermoelectric_power.json"
-file_path = "/home/alina/PycharmProjects/ml-playground/descriptors/seebeck_coefficient/data/"
+api_key = r"e6oHeSwFUv6xp7uJPRihZK1IZrFtZ4pe4hT6Xv6ivKwa2xos"
+file_thermoelectric_power = "PEER_REVIEWED_AB_INITIO_seebeck.json"
+file_path = '/Users/alina/PycharmProjects/ml-playground/examples/'
 
 save_phase_id = []
 result = {}
 
 client = MPDSDataRetrieval(api_key=api_key)
-client.dtype = MPDSDataTypes.ALL
-client.dtype = MPDSDataTypes.MACHINE_LEARNING
+client.dtype = MPDSDataTypes.PEER_REVIEWED
+client.dtype = MPDSDataTypes.AB_INITIO
 
 def collect_data_in_dict(answer: dict, result):
     """
