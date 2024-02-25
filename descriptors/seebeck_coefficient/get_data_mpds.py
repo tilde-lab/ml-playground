@@ -4,7 +4,7 @@ import numpy as np
 import pandas as pd
 
 api_key = r"KEY"
-file_name = "structure_and_seebeck"
+file_name = "4_processed_structure_and_seebeck"
 file_path = '/Users/alina/PycharmProjects/ml-playground/examples/'
 
 client = MPDSDataRetrieval(dtype=MPDSDataTypes.PEER_REVIEWED, api_key=api_key)
@@ -21,6 +21,11 @@ def get_seebeck_repetitive_phase(file_path, file_name):
     dfrm.rename(columns={'Value': 'Seebeck coefficient'}, inplace=True)
     dfrm.drop(dfrm.columns[[2, 3, 4, 5]], axis=1, inplace=True)
 
+    # remove outliers
+    for index, row in dfrm.iterrows():
+        if 1000 < row['Seebeck coefficient'] or row['Seebeck coefficient'] < -1000:
+            dfrm.drop(index, inplace=True)
+
     phases = set(dfrm['Phase'].tolist())
     answer = client.get_data(
         {"props": "atomic structure"},
@@ -29,6 +34,11 @@ def get_seebeck_repetitive_phase(file_path, file_name):
     )
 
     answer_df = pd.DataFrame(answer, columns=["phase_id", "entry", "cell_abc", "sg_n", "basis_noneq", "els_noneq"])
+
+    # delete rows with empty 'basis_noneq'
+    for index, row in answer_df.iterrows():
+        if row['basis_noneq'] == None:
+            answer_df.drop(index, inplace=True)
 
     dfrm.rename(columns={'Phase': 'phase_id'}, inplace=True)
 
@@ -48,9 +58,15 @@ def get_seebeck_not_repetitive_phase(file_path, file_name):
     dfrm = client.get_dataframe(
         {'props': 'Seebeck coefficient'}
     )
+    dfrm = dfrm[dfrm["Units"] == "muV K-1"]
     dfrm = dfrm[np.isfinite(dfrm['Phase'])]
     dfrm.rename(columns={'Value': 'Seebeck coefficient'}, inplace=True)
     dfrm.drop(dfrm.columns[[2, 3, 4, 5]], axis=1, inplace=True)
+
+    # remove outliers
+    for index, row in dfrm.iterrows():
+        if 1000 < row['Seebeck coefficient'] or row['Seebeck coefficient'] < -1000:
+            dfrm.drop(index, inplace=True)
 
     # leave only one phase_id value
     mask = ~dfrm['Phase'].duplicated()
@@ -65,6 +81,11 @@ def get_seebeck_not_repetitive_phase(file_path, file_name):
     )
 
     answer_df = pd.DataFrame(answer, columns=["phase_id", "entry", "cell_abc", "sg_n", "basis_noneq", "els_noneq"])
+
+    # delete rows with empty 'basis_noneq'
+    for index, row in answer_df.iterrows():
+        if row['basis_noneq'] == None:
+            answer_df.drop(index, inplace=True)
 
     mask = ~answer_df['phase_id'].duplicated()
     answer_df_unique_phase_id = answer_df[mask]
@@ -116,8 +137,10 @@ def get_other_props_not_repetitive(path_for_save_result, merged_df):
     print('Number of phases with structure and descriptors:', len(set(merged_df.iloc[:, 1])))
 
 
-# get_seebeck_not_repetitive_phase(file_path, file_name)
 excel_file_path = file_path + file_name + ".xlsx"
 excel_file_path_result = file_path + 'total_data_repetitive' + ".xlsx"
-data = pd.read_excel(excel_file_path)
-get_other_props_not_repetitive(excel_file_path_result, data)
+
+get_seebeck_repetitive_phase(file_path, file_name)
+
+# data = pd.read_excel(excel_file_path)
+# get_other_props_not_repetitive(excel_file_path_result, data)

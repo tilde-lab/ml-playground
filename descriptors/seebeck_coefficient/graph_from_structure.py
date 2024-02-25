@@ -2,49 +2,33 @@ import pandas as pd
 import torch
 from torch_geometric.data import Data
 from torch.utils.data import Dataset
-import pickle
+import json
 
-
-file_path = '/root/projects/ml-playground/descriptors/seebeck_coefficient/data/not_repetitive_phase_id/'
-
-excel_file_path = file_path + 'structure_and_seebeck_uniq' + ".xlsx"
-data = pd.read_excel(excel_file_path)
-
-structure_list = data.values.tolist()
-
+with open('/home/alina/PycharmProjects/ml-playground/descriptors/seebeck_coefficient/data/one_hot.json', "r") as f:
+    dict_one_hot = json.load(f)
 
 class MolecularGraphDataset(Dataset):
-    def __init__(self, structure_list):
+    def __init__(self):
         super().__init__()
         self.transform = self.build_graph
-        self.data = structure_list
+        self.file_path = '/home/alina/PycharmProjects/ml-playground/descriptors/seebeck_coefficient/data/not_repetitive_phase_id'
+        self.excel_file_path = self.file_path + '2_processed_structure_and_seebeck_uniq' + ".xlsx"
+        self.data_excel = pd.read_excel(self.excel_file_path)
+        self.data = self.data_excel.values.tolist()
 
     def __len__(self):
         return len(self.data)
 
     def __getitem__(self, idx):
-        graph = self.transform(self.data[idx])
-        return graph
+        graph, seebeck = self.transform(self.data[idx])
+        return graph, seebeck
 
     def atom_to_one_hot(self, atom):
         '''
-        Makes one-hot vector for specific atom.
+        Return one-hot vector for specific atom.
         '''
-        atoms = ['H', 'He', 'Li', 'Be', 'B', 'C', 'N', 'O', 'F', 'Ne', 'Na', 'Mg', 'Al', 'Si', 'P', 'S', 'Cl', 'Ar',
-                 'K', 'Ca', 'Sc', 'Ti', 'V', 'Cr', 'Mn', 'Fe', 'Co', 'Ni', 'Cu', 'Zn', 'Ga', 'Ge', 'As', 'Se', 'Br',
-                 'Kr',
-                 'Rb', 'Sr', 'Y', 'Zr', 'Nb', 'Mo', 'Tc', 'Ru', 'Rh', 'Pd', 'Ag', 'Cd', 'In', 'Sn', 'Sb', 'Te', 'I',
-                 'Xe',
-                 'Cs', 'Ba', 'La', 'Ce', 'Pr', 'Nd', 'Pm', 'Sm', 'Eu', 'Gd', 'Tb', 'Dy', 'Ho', 'Er', 'Tm', 'Yb', 'Lu',
-                 'Hf',
-                 'Ta', 'W', 'Re', 'Os', 'Ir', 'Pt', 'Au', 'Hg', 'Tl', 'Pb', 'Bi', 'Po', 'At', 'Rn', 'Fr', 'Ra', 'Ac',
-                 'Th',
-                 'Pa', 'U', 'Np', 'Pu', 'Am', 'Cm', 'Bk', 'Cf', 'Es', 'Fm', 'Md', 'No', 'Lr', 'Rf', 'Db', 'Sg', 'Bh',
-                 'Hs',
-                 'Mt', 'Ds', 'Rg', 'Cn', 'Nh', 'Fl', 'Mc', 'Lv', 'Ts', 'Og']
-
-        one_hot = [1 if atom == a else 0 for a in atoms]
-        return one_hot
+        result = dict_one_hot[atom].copy()
+        return result
 
     def build_graph(self, mol_data):
         '''
@@ -52,7 +36,7 @@ class MolecularGraphDataset(Dataset):
         Saves atom coordinates as node attributes, calculates the length of edges (distance between atoms).
         Graph is fully connected - all atoms are connected by edges.
         '''
-        _, formula, _, phase_id, cell_abc_str, _, basis_noneq, els_noneq = mol_data
+        _, formula, seebeck, phase_id, cell_abc_str, _, basis_noneq, els_noneq = mol_data
         els_noneq = eval(els_noneq)
 
         # makes one-hot tensor
@@ -83,7 +67,4 @@ class MolecularGraphDataset(Dataset):
 
         graph_data = Data(x=node_features, edge_index=torch.tensor(edge_index).t().contiguous(),
                           edge_attr=torch.tensor(edge_attr))
-        return graph_data
-
-
-mol_dataset = MolecularGraphDataset(structure_list)
+        return graph_data, seebeck
