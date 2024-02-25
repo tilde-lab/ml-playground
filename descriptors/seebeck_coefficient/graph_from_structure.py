@@ -3,16 +3,17 @@ import torch
 from torch_geometric.data import Data
 from torch.utils.data import Dataset
 import json
+import periodictable
 
-with open('/home/alina/PycharmProjects/ml-playground/descriptors/seebeck_coefficient/data/one_hot.json', "r") as f:
+with open('/Users/alina/PycharmProjects/ml-playground/descriptors/seebeck_coefficient/data/one_hot.json', "r") as f:
     dict_one_hot = json.load(f)
 
 class MolecularGraphDataset(Dataset):
     def __init__(self):
         super().__init__()
         self.transform = self.build_graph
-        self.file_path = '/home/alina/PycharmProjects/ml-playground/descriptors/seebeck_coefficient/data/not_repetitive_phase_id'
-        self.excel_file_path = self.file_path + '2_processed_structure_and_seebeck_uniq' + ".xlsx"
+        self.file_path = '/Users/alina/PycharmProjects/ml-playground/descriptors/seebeck_coefficient/data/'
+        self.excel_file_path = self.file_path + 'normalized_median_structure_and_seebeck' + ".xlsx"
         self.data_excel = pd.read_excel(self.excel_file_path)
         self.data = self.data_excel.values.tolist()
 
@@ -27,8 +28,9 @@ class MolecularGraphDataset(Dataset):
         '''
         Return one-hot vector for specific atom.
         '''
-        result = dict_one_hot[atom].copy()
-        return result
+        element = periodictable.elements.symbol(atom)
+        atomic_number = element.number
+        return atomic_number
 
     def build_graph(self, mol_data):
         '''
@@ -40,7 +42,7 @@ class MolecularGraphDataset(Dataset):
         els_noneq = eval(els_noneq)
 
         # makes one-hot tensor
-        one_hot = [self.atom_to_one_hot(atom) for atom in els_noneq]
+        one_hot = [[self.atom_to_one_hot(atom)] for atom in els_noneq]
 
         # add coordinates to every node
         for i, atom in enumerate(els_noneq):
