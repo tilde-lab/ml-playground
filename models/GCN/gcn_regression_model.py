@@ -5,22 +5,23 @@ import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, Linear
 from torch_geometric.utils import scatter
 from tqdm import tqdm
-from descriptors.seebeck_coefficient.graph_from_structure import MolecularGraphDataset
+from datasets.molecular_graph_dataset import MolecularGraphDataset
 import pickle
 from tensorboardX import SummaryWriter
 import numpy as np
+from torchmetrics import MeanAbsoluteError
 
+mean_absolute_error = MeanAbsoluteError()
 dataset = MolecularGraphDataset()
 
 writer = SummaryWriter('logs')
 
 train_size = int(0.8 * len(dataset))
 test_size = len(dataset) - train_size
-
 train_data, test_data = random_split(dataset, [train_size, test_size])
 
-train_dataloader = DataLoader(train_data, batch_size=1024, shuffle=True, num_workers=0)
-test_dataloader = DataLoader(test_data, batch_size=1024, shuffle=False, num_workers=0)
+train_dataloader = DataLoader(train_data, batch_size=64, shuffle=True, num_workers=0)
+test_dataloader = DataLoader(test_data, batch_size=64, shuffle=False, num_workers=0)
 
 class GCN(torch.nn.Module):
   """Graph Convolutional Network"""
@@ -57,7 +58,7 @@ model = GCN().to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=5e-4)
 
 model.train()
-for epoch in tqdm(range(200)):
+for epoch in tqdm(range(1)):
     mean_loss = 0
     cnt = 0
     for data, y in train_dataloader:
@@ -76,7 +77,7 @@ total_loss = 0
 num_samples = 0
 
 # load scaler for the reverse normalization operation
-with open('/Users/alina/PycharmProjects/ml-playground/descriptors/seebeck_coefficient/data/scaler.pkl', 'rb') as f:
+with open('/Users/alina/PycharmProjects/ml-playground/data_prepearing/normalization/scalers/scaler632668.pkl', 'rb') as f:
     scaler = pickle.load(f)
 
 with torch.no_grad():
@@ -95,8 +96,12 @@ with torch.no_grad():
         num_samples += data.num_graphs
         mean_loss += loss
 
+        mean_absolute_error.update(torch.tensor(original_pred.tolist()), torch.tensor(original_data_y.tolist()))
+        mae_result = mean_absolute_error.compute()
+
         predictions = np.array(scaler.inverse_transform(pred.cpu().numpy()))
         targets = np.array(original_data_y)
+
         np.savetxt('predictions.csv', predictions, delimiter=',')
         np.savetxt('targets.csv', targets, delimiter=',')
 
@@ -104,7 +109,11 @@ with torch.no_grad():
 
 
 mse = total_loss / num_samples
-torch.save(model.state_dict(), '/Users/alina/PycharmProjects/ml-playground/models/weights/model_weights_2.pth')
+torch.save(
+    model.state_dict(),
+    f'/Users/alina/PycharmProjects/ml-playground/models/GCN/weights/test_weights632668.pth'
+)
 writer.close()
 
-print("Mean Squared Error:", mse)
+print(f"Mean Squared Error: {mse}", f"\nMAE: {mae_result}")
+
