@@ -25,6 +25,7 @@ class DataHandler:
             self.client_handler = RequestMPDS(dtype=dtype, api_key=api_key)
         else:
             self.client_handler = None
+        self.dtype = dtype
 
     def data_distributor(
             self, subject_of_request: int, max_value: int, min_value: int, is_uniq_phase_id=True,
@@ -159,6 +160,11 @@ class DataHandler:
                      'Seebeck coefficient': 'els_noneq'}
         )
         return new_df
+
+    def combine_data(self, data_f, data_s):
+        """  Simply connects 2 dataframes  """
+        combined_df = pd.concat([data_f, data_s])
+        return combined_df
 
 
 
