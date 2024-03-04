@@ -46,7 +46,7 @@ class RequestMPDS:
                 query = 'https://api.mpds.io/v0/download/s?fmt=optimade&q=S500'
 
                 req = httplib2.Http()
-                response, content = req.request(query+str(phase))
+                response, content = req.request(query + str(phase))
 
                 # if there is no data
                 if response.status != 200:
@@ -62,9 +62,9 @@ class RequestMPDS:
                         print(f'INCORRECT data {loss_data}: ', content)
                         time.sleep(1)
                         continue
-                    result_sample = [phase, []]
+                    result_sample = [phase, answer["immutable_id"]]
                     result_sample.append(answer['lattice_vectors'])
-                    result_sample.append([])
+                    result_sample.append(1)
                     result_sample.append(answer['cartesian_site_positions'])
                     result_sample.append(answer['species_at_sites'])
 
@@ -74,7 +74,8 @@ class RequestMPDS:
             if results != []:
                 print(f'Got {len(results)} hits')
 
-            answer_df = pd.DataFrame(results, columns=["phase_id", "entry", "cell_abc", "sg_n", "basis_noneq", "els_noneq"])
+            answer_df = pd.DataFrame(results,
+                                     columns=["phase_id", "entry", "cell_abc", "sg_n", "basis_noneq", "els_noneq"])
 
             return answer_df
 

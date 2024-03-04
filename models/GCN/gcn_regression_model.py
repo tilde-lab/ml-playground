@@ -16,12 +16,12 @@ dataset = MolecularGraphDataset()
 
 writer = SummaryWriter('logs')
 
-train_size = int(0.8 * len(dataset))
+train_size = int(0.9 * len(dataset))
 test_size = len(dataset) - train_size
 train_data, test_data = random_split(dataset, [train_size, test_size])
 
-train_dataloader = DataLoader(train_data, batch_size=64, shuffle=True, num_workers=0)
-test_dataloader = DataLoader(test_data, batch_size=64, shuffle=False, num_workers=0)
+train_dataloader = DataLoader(train_data, batch_size=512, shuffle=True, num_workers=0)
+test_dataloader = DataLoader(test_data, batch_size=512, shuffle=False, num_workers=0)
 
 class GCN(torch.nn.Module):
   """Graph Convolutional Network"""
@@ -43,29 +43,28 @@ class GCN(torch.nn.Module):
       one_hot_emb = self.layer0_one_hot_emb(atoms_vector)
 
       x = self.conv1(torch.cat((one_hot_emb, atoms_xyz), dim=1), edge_index)
-      x = F.relu(x)
+      x = F.tanh(x)
       x = F.dropout(x, training=self.training)
       x = self.conv2(x, edge_index)
-      x = F.relu(x)
+      x = F.tanh(x)
       x = scatter(x, data.batch, dim=0, reduce='mean')
 
       x = self.layer3(x)
       return x
 
-
 device = torch.device('mps')
-model = GCN().to(device)
+model = GCN()
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=5e-4)
 
 model.train()
-for epoch in tqdm(range(1)):
+for epoch in tqdm(range(250)):
     mean_loss = 0
     cnt = 0
     for data, y in train_dataloader:
         cnt += 1
         optimizer.zero_grad()
-        out = model(data.to(device))
-        loss = F.mse_loss(out, y.to(device))
+        out = model(data)
+        loss = F.mse_loss(out, y)
         loss.backward()
         optimizer.step()
         mean_loss += loss
@@ -77,7 +76,7 @@ total_loss = 0
 num_samples = 0
 
 # load scaler for the reverse normalization operation
-with open('/Users/alina/PycharmProjects/ml-playground/data_prepearing/normalization/scalers/scaler632668.pkl', 'rb') as f:
+with open('/root/projects/ml-playground/data_prepearing/normalization/scalers/scaler190027.pkl', 'rb') as f:
     scaler = pickle.load(f)
 
 with torch.no_grad():
@@ -86,7 +85,7 @@ with torch.no_grad():
     for data, y in test_dataloader:
         cnt += 1
         original_data_y = scaler.inverse_transform(y.reshape(-1, 1))
-        pred = model(data.to(device))
+        pred = model(data)
         original_pred = scaler.inverse_transform(pred.cpu().numpy())
         loss = F.mse_loss(
             torch.from_numpy(original_pred),
@@ -111,7 +110,7 @@ with torch.no_grad():
 mse = total_loss / num_samples
 torch.save(
     model.state_dict(),
-    f'/Users/alina/PycharmProjects/ml-playground/models/GCN/weights/test_weights632668.pth'
+    f'/root/projects/ml-playground/models/GCN/weights/weights190027_01.pth'
 )
 writer.close()
 

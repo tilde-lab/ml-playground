@@ -154,11 +154,9 @@ class DataHandler:
         new_df['els_noneq'] = data['sg_n']
         new_df['Formula'] = data['basis_noneq']
         new_df['Seebeck coefficient'] = data['els_noneq']
-        new_df = new_df.rename(
-            columns={'entry': 'Formula', 'cell_abc': 'Seebeck coefficient', 'sg_n': 'basis_noneq',
-                     'basis_noneq': 'cell_abc', 'els_noneq': 'sg_n', 'Formula': 'basis_noneq',
-                     'Seebeck coefficient': 'els_noneq'}
-        )
+        new_df.columns = ["phase_id", 'Formula', 'Seebeck coefficient', 'entry',
+                          'cell_abc', 'sg_n', 'basis_noneq', 'els_noneq']
+
         return new_df
 
     def combine_data(self, data_f, data_s):
