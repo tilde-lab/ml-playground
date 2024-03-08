@@ -5,6 +5,7 @@ import json
 import httplib2
 from jsonschema import validate, Draft4Validator
 from jsonschema.exceptions import ValidationError
+import time
 
 api_key = "KEY"
 endpoint = "https://api.mpds.io/v0/download/facet"
@@ -33,55 +34,58 @@ for phase in range(1000):
     else:
         phases_str += str(p)
 
+elements = ["Sr", "Zr", "Br-Cl", "Li-Mg-O", "H-O-Cl-Br", "Mg-Au"]
+classes = ["perovskite", "oxide", "conductor"]
 props = {'electron energy band structure': 'B', 'electron density of states': 'C',
              'electrical conductivity': 'D', 'isothermal bulk modulus': 'E', 'Young modulus': 'F',
              'shear modulus': 'G', 'poisson ratio': 'H', 'enthalpy of formation': 'I',
              'energy gap for direct transition': 'J', 'heat capacity at constant pressure': 'K', 'entropy': 'L',
              'vibrational spectra': 'M', 'Raman spectra': 'N', 'effective charge': 'O', 'infrared spectra': 'P',
-             'energy gap for indirect transition': 'Q', 'atomic structure': 'X'}
+             'energy gap for indirect transition': 'Q'}
+    # , 'atomic structure': 'X'}
 
 for prop in props.keys():
+    for el in elements:
+        for cl in classes:
+            search = [{"props": prop}, {"props": prop, "elements": el, "classes": cl},
+                      {"elements": el, "classes": cl, "props": prop}]
+            for option in search:
 
-    search = {
-        "props": prop
-    }
+                json_request = {
+                        'q': json.dumps(option),
+                        # 'phases' : phases_str,
+                        'pagesize': 10,
+                        'dtype': 7
+                    }
 
-    json_request = {
-            'q': json.dumps(search),
-            'phases' : phases_str,
-            'pagesize': 10,
-            'dtype': 7
-        }
+                response, content = req.request(
+                    uri=endpoint + '?' + urlencode(json_request),
+                    method='GET',
+                    headers={'Key': api_key}
+                )
+                time.sleep(1)
 
-    # try:
-    #     validate(instance=json_request, schema=schema['definitions']['input_query'])
-    #     print("JSON request is valid.")
-    # except ValidationError as e:
-    #     print("JSON request is invalid:", e)
+                target = json.loads(content)
 
-    response, content = req.request(
-        uri=endpoint + '?' + urlencode(json_request),
-        method='GET',
-        headers={'Key': api_key}
-    )
-    target = json.loads(content)
+                if response.status != 200:
+                    raise RuntimeError("Error code %s" % response.status)
+                if target.get('error'):
+                    raise RuntimeError(target['error'])
 
-    if response.status != 200:
-        raise RuntimeError("Error code %s" % response.status)
-    if target.get('error'):
-        raise RuntimeError(target['error'])
+                print("OK, got %s hits" % len(target['out']))
 
-    print("OK, got %s hits" % len(target['out']))
+                if not target.get("npages") or not target.get("out") or target.get("error"):
+                    print("Unexpected API response")
+                    continue
 
-    if not target.get("npages") or not target.get("out") or target.get("error"):
-        sys.exit("Unexpected API response")
+                try:
+                    validate(instance=target["out"], schema=schema)
+                    print(f"Success for search: {option}")
+                except ValidationError as e:
+                    raise RuntimeError(
+                        "The item: \r\n\r\n %s \r\n\r\n has an issue: \r\n\r\n %s" % (
+                            e.instance, e.context
+                        )
+                    )
 
-    try:
-        validate(instance=target["out"], schema=schema)
-        print(f"Success for prop: {prop}")
-    except ValidationError as e:
-        raise RuntimeError(
-            "The item: \r\n\r\n %s \r\n\r\n has an issue: \r\n\r\n %s" % (
-                e.instance, e.context
-            )
-        )
+
