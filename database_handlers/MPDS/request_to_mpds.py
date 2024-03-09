@@ -15,6 +15,7 @@ class RequestMPDS:
         self.client = MPDSDataRetrieval(dtype=dtype, api_key=api_key)
         self.client.chillouttime = 1
         self.dtype = dtype
+        self.api_key = api_key
 
     def make_request(self, is_seebeck=False, is_structure_for_seebeck=False, phases=None):
         """
@@ -28,7 +29,14 @@ class RequestMPDS:
             dfrm.drop(dfrm.columns[[2, 3, 4, 5]], axis=1, inplace=True)
             return dfrm
 
-        elif is_structure_for_seebeck and self.dtype == MPDSDataTypes.PEER_REVIEWED:
+        elif (
+                is_structure_for_seebeck and
+                (self.dtype == MPDSDataTypes.PEER_REVIEWED or self.dtype == MPDSDataTypes.MACHINE_LEARNING)
+        ):
+            # change flag on PEER_REVIEWED for getting structure
+            if self.dtype == MPDSDataTypes.MACHINE_LEARNING:
+                self.client = MPDSDataRetrieval(dtype=MPDSDataTypes.PEER_REVIEWED, api_key=self.api_key)
+
             # get structures for data with Seebeck coefficient
             answer = self.client.get_data(
                 {"props": "atomic structure"},
