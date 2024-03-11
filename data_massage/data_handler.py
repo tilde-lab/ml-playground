@@ -1,7 +1,11 @@
 from mpds_client import MPDSDataTypes
 import pandas as pd
 from database_handlers.MPDS.request_to_mpds import RequestMPDS
-from data_prepearing.calculate_median_value import calc_median_value
+from data_massage.calculate_median_value import calc_median_value
+
+class RequestTypes(object):
+    STRUCTURE_AND_SEEBECK = 1
+    ALL_DATA_FOR_PHASES_WITH_SEEBECK = 2
 
 class DataHandler:
     """
@@ -28,8 +32,8 @@ class DataHandler:
         self.dtype = dtype
 
     def data_distributor(
-            self, subject_of_request: int, max_value: int, min_value: int, is_uniq_phase_id=True,
-            is_median_data=False, is_uniq_phase_to_many_props=False
+            self, subject_of_request: int, max_value=None, min_value=None, is_uniq_phase_id=True,
+            is_median_data=False, is_uniq_phase_to_many_props=False, phases=None, data=None
     ):
         """
         Distributes queries according to the name of data required.
@@ -38,6 +42,7 @@ class DataHandler:
         subject_of_request : int
             The number that corresponds to the name of the requested data
             Number 1: structures with calculation of Seebeck coefficient
+            Number 2: all available props for specific phases with calculations of Seebeck
         max_value : int
             Max value for range required data
             For subject_of_request=1 this is the Seebeck value
@@ -58,6 +63,9 @@ class DataHandler:
             result = self.seebeck_and_structure(
                 max_value, min_value, is_uniq_phase_id, is_median_data, is_uniq_phase_to_many_props
             )
+
+        elif subject_of_request == 2:
+            result = self.get_all_available_props(phases, data)
 
         return result
 
@@ -84,6 +92,20 @@ class DataHandler:
                      "els_noneq", "Formula", "Seebeck coefficient"]
         )
         return data
+
+    def get_all_available_props(self, phases: list, data):
+        """
+        Requests all available props for specific phases. Merge input Dataframe with new Dataframe with props.
+        Parameters
+        ----------
+        phases : list
+            'Phase_id' for request
+        data : pandas DataFrame
+            DataFrame which will merge with result of request. Merge by 'inner'
+        """
+        props_df = self.client_handler.make_request(phases=phases, all_prop_for_seebeck=True)
+        result_df = pd.merge(props_df, data, on='phase_id', how='inner')
+        return result_df
 
     def seebeck_and_structure(
             self, max_value, min_value, is_uniq_phase_id, is_median_data, is_uniq_phase_to_many_props
@@ -164,7 +186,15 @@ class DataHandler:
         combined_df = pd.concat([data_f, data_s])
         return combined_df
 
+    def removing_properties_by_intersection(self, data, props_to_save: list):
+        columns_to_save = [
+            'phase_id', 'Formula', 'Seebeck coefficient', 'entry', 'cell_abc', 'sg_n', 'basis_noneq', 'els_noneq'
+        ]
+        columns_to_save = columns_to_save + props_to_save
 
+        new_df = data[columns_to_save].copy()
+        new_df = new_df.dropna()
+        return new_df
 
 
 

@@ -17,7 +17,7 @@ class RequestMPDS:
         self.dtype = dtype
         self.api_key = api_key
 
-    def make_request(self, is_seebeck=False, is_structure_for_seebeck=False, phases=None):
+    def make_request(self, is_seebeck=False, is_structure_for_seebeck=False, all_prop_for_seebeck=False, phases=None):
         """
         Requests data from the MPDS according to the input parms.
         Return DataFrame or dict.
@@ -84,8 +84,41 @@ class RequestMPDS:
 
             answer_df = pd.DataFrame(results,
                                      columns=["phase_id", "entry", "cell_abc", "sg_n", "basis_noneq", "els_noneq"])
-
             return answer_df
+
+        elif all_prop_for_seebeck == True:
+            new_df = pd.DataFrame(phases, columns=["phase_id"])
+
+            with open('/root/projects/ml-playground/data_massage/props.json') as f:
+                props = eval(f.read())
+
+            self.dtype = MPDSDataTypes.ALL
+
+            for prop in list(props.keys()):
+                try:
+                    answer = self.client.get_data(
+                        {"props": prop},
+                        phases=phases
+                    )
+
+                    answers_lists = []
+                    for value in answer:
+                        # if value of specific prop not None
+                        if value[6] != None:
+                            update_values = [value[0], value[6]]
+                            answers_lists.append(update_values)
+                    answer_df = pd.DataFrame(answers_lists, columns=['phase_id', props[prop]])
+
+                    mask = ~answer_df['phase_id'].duplicated()
+                    answer_df_unique_phase_id = answer_df[mask]
+                    new_df = pd.merge(answer_df_unique_phase_id, new_df, on='phase_id', how='outer')
+                    if answers_lists != []:
+                        print(f'Success! Save {len(answers_lists)} values for prop - {prop}')
+                    else:
+                        print(f'All values for prop: {prop} is None')
+                except:
+                    print(f'No data for {prop}')
+            return new_df
 
 
 
