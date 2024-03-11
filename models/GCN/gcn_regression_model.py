@@ -23,15 +23,14 @@ train_data = torch.utils.data.Subset(dataset, range(train_size))
 test_data = torch.utils.data.Subset(dataset, range(train_size, train_size + test_size))
 
 train_dataloader = DataLoader(train_data, batch_size=512, shuffle=True, num_workers=0)
-test_dataloader = DataLoader(test_data, batch_size=512, shuffle=False, num_workers=0)
+test_dataloader = DataLoader(test_data, batch_size=10779, shuffle=False, num_workers=0)
 
 class GCN(torch.nn.Module):
   """Graph Convolutional Network"""
 
   def __init__(self):
       super().__init__()
-      self.layer0_one_hot_emb = Linear(1, 4)
-      self.conv1 = GCNConv(7, 16)
+      self.conv1 = GCNConv(8, 16)
       self.conv2 = GCNConv(16, 8)
       self.layer3 = Linear(8, 1)
 
@@ -39,12 +38,7 @@ class GCN(torch.nn.Module):
   def forward(self, data):
       x, edge_index = data.x, data.edge_index.type(torch.int64)
 
-      atoms_vector = x[:, :1]
-      atoms_xyz = x[:, 1:]
-
-      one_hot_emb = self.layer0_one_hot_emb(atoms_vector)
-
-      x = self.conv1(torch.cat((one_hot_emb, atoms_xyz), dim=1), edge_index)
+      x = self.conv1(x, edge_index)
       x = F.tanh(x)
 
       x = self.conv2(x, edge_index)
@@ -85,10 +79,8 @@ with torch.no_grad():
     for data, y in test_dataloader:
         cnt += 1
         pred = model(data)
-        loss = F.mse_loss(
-            pred,
-            y
-        )
+        loss = F.mse_loss(pred, y)
+
         total_loss += loss.item() * data.num_graphs
         num_samples += data.num_graphs
         mean_loss += loss
@@ -101,7 +93,7 @@ with torch.no_grad():
 mse = total_loss / num_samples
 torch.save(
     model.state_dict(),
-    f'/root/projects/ml-playground/models/GCN/weights/weights362835_05.pth'
+    f'/root/projects/ml-playground/models/GCN/weights/weights000001_01.pth'
 )
 writer.close()
 

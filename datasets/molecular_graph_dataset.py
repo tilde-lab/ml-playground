@@ -2,17 +2,16 @@ import pandas as pd
 import torch
 from torch_geometric.data import Data
 from torch.utils.data import Dataset
-import json
 import periodictable
-
+from data_massage.mendeleev_table.periods import periods
 
 class MolecularGraphDataset(Dataset):
     def __init__(self):
         super().__init__()
         self.transform = self.build_graph
         self.file_path = \
-            '/Users/alina/PycharmProjects/ml-playground/data_prepearing/seebeck_coefficient_and_structure/data/example/'
-        self.excel_file_path = self.file_path + 'example_uniq_phase_id_632668' + ".xlsx"
+            '/root/projects/ml-playground/data_massage/seebeck_coefficient_and_structure/data/'
+        self.excel_file_path = self.file_path + "K_I_C_B_prop_ALL.xlsx"
         self.data_excel = pd.read_excel(self.excel_file_path)
         self.data = self.data_excel.values.tolist()
 
@@ -31,24 +30,35 @@ class MolecularGraphDataset(Dataset):
         atomic_number = element.number
         return atomic_number
 
+    def get_atoms_period_number(self, atom):
+        for idx, period in enumerate(periods):
+            if atom in period:
+                return idx+1
+        print(f'INCORRECT atoms name: {atom}')
+
     def build_graph(self, mol_data):
         """
         Makes graph.
         Saves atom coordinates as node attributes, calculates the length of edges (distance between atoms).
         Graph is fully connected - all atoms are connected by edges.
         """
-        _, formula, seebeck, phase_id, cell_abc_str, _, basis_noneq, els_noneq = mol_data
+        # k, i, c, b - see keys in 'props.json'
+        _, formula, seebeck, phase_id, cell_abc_str, _, basis_noneq, els_noneq, k, i, c, b = mol_data
         els_noneq = eval(els_noneq)
         basis_noneq = eval(basis_noneq)
 
-        # makes ordinal vector
-        x_vector = [[self.atom_to_ordenal(atom)] for atom in els_noneq]
+        # create list with features for every node
+        x_vector = [[self.get_atoms_period_number(atom)] for atom in els_noneq]
 
         # add coordinates to every node
         for i, atom in enumerate(els_noneq):
             x_vector[i].append(basis_noneq[i][0])
             x_vector[i].append(basis_noneq[i][1])
             x_vector[i].append(basis_noneq[i][2])
+            x_vector[i].append(k)
+            x_vector[i].append(i)
+            x_vector[i].append(c)
+            x_vector[i].append(b)
 
         node_features = torch.tensor(x_vector)
 
