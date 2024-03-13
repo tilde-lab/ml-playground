@@ -4,6 +4,10 @@ from torch_geometric.data import Data
 from torch.utils.data import Dataset
 import periodictable
 from data_massage.mendeleev_table.periods import periods
+from descriptors.utils import get_APF, get_Wiener
+from mpds_client import MPDSDataRetrieval
+from ase import Atoms
+
 
 class MolecularGraphDataset(Dataset):
     def __init__(self):
@@ -11,7 +15,7 @@ class MolecularGraphDataset(Dataset):
         self.transform = self.build_graph
         self.file_path = \
             '/root/projects/ml-playground/data_massage/seebeck_coefficient_and_structure/data/'
-        self.excel_file_path = self.file_path + "K_I_C_B_prop_ALL.xlsx"
+        self.excel_file_path = self.file_path + "I_C_PEER_INITIO.xlsx"
         self.data_excel = pd.read_excel(self.excel_file_path)
         self.data = self.data_excel.values.tolist()
 
@@ -19,31 +23,48 @@ class MolecularGraphDataset(Dataset):
         return len(self.data)
 
     def __getitem__(self, idx):
-        graph, seebeck = self.transform(self.data[idx])
-        return graph, seebeck
+        graph, seebeck, p, c, apf, wiener  = self.transform(self.data[idx])
+        return graph, seebeck, p, c, apf, wiener
 
     def atom_to_ordenal(self, atom):
         """
-        Return ordinal number for specific atom.
+        Returns ordinal number for specific atom.
         """
         element = periodictable.elements.symbol(atom)
         atomic_number = element.number
         return atomic_number
 
     def get_atoms_period_number(self, atom):
+        """
+        Returns period of atom.
+        """
         for idx, period in enumerate(periods):
             if atom in period:
                 return idx+1
         print(f'INCORRECT atoms name: {atom}')
 
+    def calculate_apf_and_wiener(self, items):
+        """
+        Calculates APF and Wiener for each graph.
+        """
+        if items[4] != 1:
+            crystal = MPDSDataRetrieval.compile_crystal(items, "ase")
+            if not crystal:
+                return None, None
+        elif items[4] == 1:
+            crystal = Atoms(symbols=items[6], positions=items[5], cell=items[3])
+            if not crystal:
+                return None, None
+
+        return get_APF(crystal), get_Wiener(crystal)
     def build_graph(self, mol_data):
         """
         Makes graph.
         Saves atom coordinates as node attributes, calculates the length of edges (distance between atoms).
         Graph is fully connected - all atoms are connected by edges.
         """
-        # k, i, c, b - see keys in 'props.json'
-        _, formula, seebeck, phase_id, cell_abc_str, _, basis_noneq, els_noneq, k, i, c, b = mol_data
+        # k, i(p), c, b - see keys in 'props.json'
+        ph, formula, seebeck, entry, cell_abc_str, sg_n, basis_noneq, els_noneq, p, c = mol_data
         els_noneq = eval(els_noneq)
         basis_noneq = eval(basis_noneq)
 
@@ -55,10 +76,8 @@ class MolecularGraphDataset(Dataset):
             x_vector[i].append(basis_noneq[i][0])
             x_vector[i].append(basis_noneq[i][1])
             x_vector[i].append(basis_noneq[i][2])
-            x_vector[i].append(k)
-            x_vector[i].append(i)
+            x_vector[i].append(p)
             x_vector[i].append(c)
-            x_vector[i].append(b)
 
         node_features = torch.tensor(x_vector)
 
@@ -77,6 +96,10 @@ class MolecularGraphDataset(Dataset):
                 edge_attr.append(distance)
                 edge_attr.append(distance)
 
+        apf, wiener = self.calculate_apf_and_wiener(
+            [ph, entry, formula, eval(cell_abc_str), sg_n, basis_noneq, els_noneq]
+        )
+
         graph_data = Data(x=node_features, edge_index=torch.tensor(edge_index).t().contiguous(),
                           edge_attr=torch.tensor(edge_attr))
-        return graph_data, seebeck
+        return graph_data, seebeck, p, c, apf, wiener
