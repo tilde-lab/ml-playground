@@ -3,7 +3,7 @@ import torch
 from torch_geometric.data import Data
 from torch.utils.data import Dataset
 import periodictable
-from data_massage.mendeleev_table.periods import periods
+from data_massage.mendeleev_table import get_periodic_number
 from descriptors.utils import get_APF, get_Wiener
 from mpds_client import MPDSDataRetrieval
 from ase import Atoms
@@ -34,15 +34,6 @@ class MolecularGraphDataset(Dataset):
         atomic_number = element.number
         return atomic_number
 
-    def get_atoms_period_number(self, atom):
-        """
-        Returns period of atom.
-        """
-        for idx, period in enumerate(periods):
-            if atom in period:
-                return idx+1
-        print(f'INCORRECT atoms name: {atom}')
-
     def calculate_apf_and_wiener(self, items):
         """
         Calculates APF and Wiener for each graph.
@@ -70,7 +61,7 @@ class MolecularGraphDataset(Dataset):
         basis_noneq = eval(basis_noneq)
 
         # create list with features for every node
-        x_vector = [[self.get_atoms_period_number(atom)] for atom in els_noneq]
+        x_vector = [[get_periodic_number(atom)] for atom in els_noneq]
 
         # add coordinates to every node
         for i, atom in enumerate(els_noneq):
