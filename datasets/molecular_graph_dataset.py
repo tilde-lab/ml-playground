@@ -2,11 +2,11 @@ import pandas as pd
 import torch
 from torch_geometric.data import Data
 from torch.utils.data import Dataset
-import periodictable
-from data_massage.mendeleev_table import get_periodic_number
-from descriptors.utils import get_APF, get_Wiener
 from mpds_client import MPDSDataRetrieval
 from ase import Atoms
+from ase.data import chemical_symbols
+from data_massage.mendeleev_table import get_periodic_number
+from descriptors.utils import get_APF, get_Wiener
 
 
 class MolecularGraphDataset(Dataset):
@@ -30,9 +30,7 @@ class MolecularGraphDataset(Dataset):
         """
         Returns ordinal number for specific atom.
         """
-        element = periodictable.elements.symbol(atom)
-        atomic_number = element.number
-        return atomic_number
+        return chemical_symbols.index(atom)
 
     def calculate_apf_and_wiener(self, items):
         """
