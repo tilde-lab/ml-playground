@@ -26,7 +26,7 @@ class MolecularGraphDataset(Dataset):
         graph, seebeck, p, c, apf, wiener  = self.transform(self.data[idx])
         return graph, seebeck, p, c, apf, wiener
 
-    def atom_to_ordenal(self, atom):
+    def atom_to_ordinal(self, atom):
         """
         Returns ordinal number for specific atom.
         """
@@ -57,6 +57,7 @@ class MolecularGraphDataset(Dataset):
                 return None, None
 
         return get_APF(crystal), get_Wiener(crystal)
+
     def build_graph(self, mol_data):
         """
         Makes graph.
