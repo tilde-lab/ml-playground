@@ -28,7 +28,7 @@ test_dataloader = DataLoader(test_data, batch_size=15759, shuffle=False, num_wor
 class GCN(torch.nn.Module):
   """Graph Convolutional Network"""
 
-  def __init__(self, n_hid, activation):
+  def __init__(self, n_hid):
       super().__init__()
       self.conv1 = GCNConv(4, n_hid)
       self.conv2 = GCNConv(n_hid, n_hid)
@@ -51,7 +51,7 @@ class GCN(torch.nn.Module):
       return x
 
 device = torch.device('cpu')
-model = GCN().to(device)
+model = GCN(n_hid=16).to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=5e-4)
 loss_list = []
 
@@ -73,7 +73,7 @@ for epoch in tqdm(range(150)):
     if epoch % 10 == 0:
         torch.save(
             model.state_dict(),
-            f'/root/projects/ml-playground/models/GCN/weights/weights000007_01.pth'
+            f'/root/projects/ml-playground/models/GCN/weights/weights000008_01.pth'
         )
 
 model.eval()
@@ -104,7 +104,7 @@ with torch.no_grad():
 mse = total_loss / num_samples
 torch.save(
     model.state_dict(),
-    f'/root/projects/ml-playground/models/GCN/weights/weights000007_01.pth'
+    f'/root/projects/ml-playground/models/GCN/weights/weights000008_01.pth'
 )
 writer.close()
 
