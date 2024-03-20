@@ -5,14 +5,14 @@ import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, Linear
 from torch_geometric.utils import scatter
 from tqdm import tqdm
-from datasets.molecular_graph_dataset import MolecularGraphDataset
-import pickle
+from datasets.molecular_graph_dataset import CrystalGraphDataset
 from tensorboardX import SummaryWriter
-import numpy as np
 from torchmetrics import MeanAbsoluteError
+from torcheval.metrics import R2Score
 
+r2 = R2Score()
 mean_absolute_error = MeanAbsoluteError()
-dataset = MolecularGraphDataset()
+dataset = CrystalGraphDataset()
 
 writer = SummaryWriter('logs')
 
@@ -28,43 +28,30 @@ test_dataloader = DataLoader(test_data, batch_size=15759, shuffle=False, num_wor
 class GCN(torch.nn.Module):
   """Graph Convolutional Network"""
 
-  def __init__(self):
+  def __init__(self, n_hid, activation):
       super().__init__()
-      self.conv1 = GCNConv(4, 16)
-      self.conv2 = GCNConv(16, 8)
-      self.layer3 = Linear(4, 8)
-      self.layer4 = Linear(16, 1)
+      self.conv1 = GCNConv(4, n_hid)
+      self.conv2 = GCNConv(n_hid, n_hid)
+      self.layer3 = Linear(n_hid, 1)
+      self.activ = F.elu
 
-  def forward(self, d):
-      # k, p, c, b - additional properties for total graph (see ml-playground/data_massage/props.json)
-      data, y, p, c, apf, wiener = d
-      p = p.view(-1, 1)
-      c = c.view(-1, 1)
-      apf = apf.view(-1, 1)
-      wiener = wiener.view(-1, 1)
-
-
-      additional_data = torch.cat((p, c, apf, wiener), dim=1)
+  def forward(self, data):
       x, edge_index = data.x, data.edge_index.type(torch.int64)
 
-      # first input
-      x = self.conv1(x[:, :4], edge_index)
-      x = F.tanh(x)
+      x = self.conv1(x, edge_index)
+      x = self.activ(x)
       x = F.dropout(x, training=self.training)
+
       x = self.conv2(x, edge_index)
-      x = F.tanh(x)
+      x = self.activ(x)
 
-      # second input
-      add_x = self.layer3(additional_data)
-      add_x = F.tanh(add_x)
+      x = scatter(x, data.batch, dim=0, reduce='mean')
 
-      x = scatter(x, data.batch, dim=0, reduce='sum')
-
-      x = self.layer4(torch.cat((x, add_x), dim=1))
+      x = self.layer3(x)
       return x
 
 device = torch.device('cpu')
-model = GCN()
+model = GCN().to(device)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=5e-4)
 loss_list = []
 
@@ -72,12 +59,11 @@ model.train()
 for epoch in tqdm(range(150)):
     mean_loss = 0
     cnt = 0
-    for data, y, p, c, apf, wiener in train_dataloader:
-        d = [data, y, p, c, apf, wiener]
+    for data, y in train_dataloader:
         cnt += 1
         optimizer.zero_grad()
-        out = model(d)
-        loss = F.mse_loss(out, y)
+        out = model(data.to(device))
+        loss = F.mse_loss(out, y.to(device))
         loss.backward()
         optimizer.step()
         mean_loss += loss
@@ -87,7 +73,7 @@ for epoch in tqdm(range(150)):
     if epoch % 10 == 0:
         torch.save(
             model.state_dict(),
-            f'/root/projects/ml-playground/models/GCN/weights/weights000005_01.pth'
+            f'/root/projects/ml-playground/models/GCN/weights/weights000007_01.pth'
         )
 
 model.eval()
@@ -97,11 +83,10 @@ num_samples = 0
 with torch.no_grad():
     mean_loss = 0
     cnt = 0
-    for data, y, p, c, apf, wiener in test_dataloader:
-        d = [data, y, p, c, apf, wiener]
+    for data, y in test_dataloader:
         cnt += 1
-        pred = model(d)
-        loss = F.mse_loss(pred, y)
+        pred = model(data.to(device))
+        loss = F.mse_loss(pred, y.to(device))
 
         total_loss += loss.item() * data.num_graphs
         num_samples += data.num_graphs
@@ -110,14 +95,18 @@ with torch.no_grad():
         mean_absolute_error.update(torch.tensor(pred.tolist()).reshape(-1), torch.tensor(y.tolist()))
         mae_result = mean_absolute_error.compute()
 
+        r2.update(torch.tensor(torch.tensor(pred.tolist())).reshape(-1),
+                  torch.tensor(y.tolist()))
+        r2_res = r2.compute()
+
     writer.add_scalar('Loss/test', mean_loss/cnt)
 
 mse = total_loss / num_samples
 torch.save(
     model.state_dict(),
-    f'/root/projects/ml-playground/models/GCN/weights/weights000005_01.pth'
+    f'/root/projects/ml-playground/models/GCN/weights/weights000007_01.pth'
 )
 writer.close()
 
-print(f"Mean Squared Error: {mse}", f"\nMAE: {mae_result}")
+print("R2: ", r2_res, " MAE: ", mae_result)
 

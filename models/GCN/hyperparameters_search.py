@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, Linear
 from torch_geometric.utils import scatter
 from tqdm import tqdm
-from datasets.molecular_graph_dataset import MolecularGraphDataset
+from datasets.molecular_graph_dataset import CrystalGraphDataset
 import numpy as np
 from torchmetrics import MeanAbsoluteError
 from torcheval.metrics import R2Score
@@ -152,7 +152,7 @@ def search_params(test_data, train_data):
 def main():
     print("\nBegin hyperparameter random search ")
 
-    dataset = MolecularGraphDataset()
+    dataset = CrystalGraphDataset()
 
     train_size = int(0.9 * len(dataset))
     test_size = len(dataset) - train_size

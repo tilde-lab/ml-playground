@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import torch.utils.data as data
 from torch_geometric.loader import DataLoader
-from datasets.molecular_graph_dataset import MolecularGraphDataset
+from datasets.molecular_graph_dataset import CrystalGraphDataset
 from tqdm import tqdm
 import torch.nn.functional as F
 from torchmetrics import MeanAbsoluteError
@@ -18,7 +18,7 @@ from torcheval.metrics import R2Score
 r2 = R2Score()
 mean_absolute_error = MeanAbsoluteError()
 
-dataset = MolecularGraphDataset()
+dataset = CrystalGraphDataset()
 
 train_size = int(0.9 * len(dataset))
 test_size = len(dataset) - train_size
@@ -90,7 +90,7 @@ model = TransformerModel(n_feature=4, heads=4)
 optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=5e-4)
 
 model.train()
-for epoch in tqdm(range(200)):
+for epoch in tqdm(range(150)):
     mean_loss = 0
     cnt = 0
     for data, y in train_dataloader:
@@ -109,7 +109,7 @@ for epoch in tqdm(range(200)):
     if epoch % 10 == 0:
         torch.save(
             model.state_dict(),
-            f'/root/projects/ml-playground/models/transformer/weights/weights000007_01.pth'
+            f'/root/projects/ml-playground/models/transformer/weights/weights000007_02.pth'
         )
 
 model.eval()
@@ -139,7 +139,7 @@ with torch.no_grad():
 mse = total_loss / num_samples
 torch.save(
     model.state_dict(),
-    f'/root/projects/ml-playground/models/transformer/weights/weights000007_01.pth'
+    f'/root/projects/ml-playground/models/transformer/weights/weights000007_02.pth'
 )
 
 print("R2: ", r2_res, " MAE: ", mae_result)
