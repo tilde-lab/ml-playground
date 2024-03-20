@@ -2,10 +2,14 @@ from mpds_client import MPDSDataTypes
 import pandas as pd
 from database_handlers.MPDS.request_to_mpds import RequestMPDS
 from data_massage.calculate_median_value import calc_median_value
+from ase import Atoms
+# change path if another
+from metis_backend.metis_backend.structures.struct_utils import order_disordered
 
 class RequestTypes(object):
     STRUCTURE_AND_SEEBECK = 1
     ALL_DATA_FOR_PHASES_WITH_SEEBECK = 2
+    TO_ORDER_DISORDERED = 3
 
 class DataHandler:
     """
@@ -67,7 +71,51 @@ class DataHandler:
         elif subject_of_request == 2:
             result = self.get_all_available_props(phases, data)
 
+        elif subject_of_request == 3:
+            result = self.to_order_disordered_str(phases)
+
         return result
+
+    def to_order_disordered_str(self, phases: list):
+        """
+        Creates order in disordered structures.
+        Returns pandas Dataframe with ordered structures.
+        """
+        # get disordered structures from db
+        answer = self.just_uniq_phase_id(self.client_handler.request_disordered(phases))
+
+        result_list = []
+        atoms_list = []
+
+        # create Atoms objects
+        for index, row in answer.iterrows():
+            # info for Atoms obj
+            disordered = {'disordered': {}}
+
+            basis_noneq = row['basis_noneq']
+            els_noneq = row['els_noneq']
+            occs_noneq = row['occs_noneq']
+
+            for idx, (position, element, occupancy) in enumerate(zip(basis_noneq, els_noneq, occs_noneq)):
+                # Add information about disorder to dict
+                disordered['disordered'][idx] = {element: occupancy}
+            crystal = Atoms(
+                symbols=row['els_noneq'], positions=row['basis_noneq'], cell=row['cell_abc'], info=disordered
+            )
+            atoms_list.append(crystal)
+
+        # make ordered structures
+        for i, crystal in enumerate(atoms_list):
+            obj, error = order_disordered(crystal)
+            result_list.append([answer['phase_id'].tolist()[i], obj.get_cell_lengths_and_angles().tolist(),
+                                answer['sg_n'].tolist()[i],
+                                obj.get_positions().tolist(), list(obj.symbols)])
+
+        return pd.DataFrame(
+            result_list,
+            columns=['phase_id', 'cell_abc', 'sg_n', 'basis_noneq', 'els_noneq']
+        )
+
 
     def just_uniq_phase_id(self, df):
         """
@@ -85,7 +133,13 @@ class DataHandler:
         Deletes data with wrong information or empty data.
         """
         data = df.values.tolist()
-        data = [row for row in data if row[idx_check] != type_of_trash]
+        data_res = [row for row in data if row[idx_check] != type_of_trash]
+
+        for row in data:
+            if row[idx_check] != type_of_trash:
+                data_res.append(row)
+            else:
+                print('Removed garbage data:', row)
         data = pd.DataFrame(
             data,
             columns=["phase_id", "entry", "cell_abc", "sg_n", "basis_noneq",
@@ -135,9 +189,10 @@ class DataHandler:
         dfrm = self.client_handler.make_request(is_seebeck=True)
 
         # remove outliers in value of Seebeck coefficient
-        for index, row in dfrm.iterrows():
-            if max_value < row['Seebeck coefficient'] or row['Seebeck coefficient'] < min_value:
-                dfrm.drop(index, inplace=True)
+        if max_value != None:
+            for index, row in dfrm.iterrows():
+                if max_value < row['Seebeck coefficient'] or row['Seebeck coefficient'] < min_value:
+                    dfrm.drop(index, inplace=True)
 
         # leave only one phase_id value
         if is_uniq_phase_id:
