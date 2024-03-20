@@ -107,9 +107,12 @@ class DataHandler:
         # make ordered structures
         for i, crystal in enumerate(atoms_list):
             obj, error = order_disordered(crystal)
-            result_list.append([answer['phase_id'].tolist()[i], obj.get_cell_lengths_and_angles().tolist(),
-                                answer['sg_n'].tolist()[i],
-                                obj.get_positions().tolist(), list(obj.symbols)])
+            if not error:
+                result_list.append([answer['phase_id'].tolist()[i], obj.get_cell_lengths_and_angles().tolist(),
+                                    answer['sg_n'].tolist()[i],
+                                    obj.get_positions().tolist(), list(obj.symbols)])
+            else:
+                print(error)
 
         return pd.DataFrame(
             result_list,
@@ -240,6 +243,30 @@ class DataHandler:
         """  Simply connects 2 dataframes  """
         combined_df = pd.concat([data_f, data_s])
         return combined_df
+
+    def merge_seebeck_and_ordered_str(self, data_disord: list, ordered: list) -> list:
+        """
+        Create list with updated ordered values for disordered data. Other structures copy to new list
+        without changes.
+        Parameters
+        ----------
+        data_disord : list
+            Made of 'phase_id', 'Formula', 'Seebeck coefficient', 'entry', 'cell_abc',
+            'sg_n', 'basis_noneq', 'els_noneq'
+        ordered : list
+            Made of next columns 'phase_id', 'cell_abc', 'sg_n', 'basis_noneq', 'els_noneq'
+        """
+        update_data = []
+
+        for dis_sample in data_disord:
+            for i, ord_sample in enumerate(ordered):
+                if dis_sample[0] == ord_sample[0]:
+                    update_data.append([dis_sample[0], dis_sample[1], dis_sample[2], dis_sample[3],
+                                        ord_sample[1], ord_sample[2], ord_sample[3], ord_sample[4]])
+                    break
+                elif i == len(ordered) - 1:
+                    update_data.append(dis_sample)
+        return update_data
 
     def removing_properties_by_intersection(self, data, props_to_save: list):
         columns_to_save = [
