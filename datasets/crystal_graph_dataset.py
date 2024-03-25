@@ -2,7 +2,7 @@ import pandas as pd
 import torch
 from torch_geometric.data import Data
 from torch.utils.data import Dataset
-import periodictable
+from ase.data import chemical_symbols
 from data_massage.mendeleev_table import get_periodic_number
 
 
@@ -27,10 +27,7 @@ class CrystalGraphDataset(Dataset):
         """
         Returns ordinal number for specific atom.
         """
-        element = periodictable.elements.symbol(atom)
-        atomic_number = element.number
-        return atomic_number
-
+        return chemical_symbols.index(atom)
 
     def build_graph(self, mol_data):
         """
