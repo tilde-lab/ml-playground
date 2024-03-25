@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, Linear
 from torch_geometric.utils import scatter
 from tqdm import tqdm
-from datasets.molecular_graph_dataset import CrystalGraphDataset
+from datasets.crystal_graph_dataset import CrystalGraphDataset
 import numpy as np
 from torchmetrics import MeanAbsoluteError
 from torcheval.metrics import R2Score

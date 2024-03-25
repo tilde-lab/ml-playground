@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from torch_geometric.nn import Linear
 from torch_geometric.utils import scatter
 from tqdm import tqdm
-from datasets.molecular_graph_dataset import CrystalGraphDataset
+from datasets.crystal_graph_dataset import CrystalGraphDataset
 from tensorboardX import SummaryWriter
 from torchmetrics import MeanAbsoluteError
 from torch_geometric.nn import GATv2Conv

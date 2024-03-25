@@ -9,7 +9,7 @@ import torch
 import torch.nn as nn
 import torch.utils.data as data
 from torch_geometric.loader import DataLoader
-from datasets.molecular_graph_dataset import CrystalGraphDataset
+from datasets.crystal_graph_dataset import CrystalGraphDataset
 from tqdm import tqdm
 import torch.nn.functional as F
 from torchmetrics import MeanAbsoluteError

@@ -5,7 +5,7 @@ import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, Linear
 from torch_geometric.utils import scatter
 from tqdm import tqdm
-from datasets.molecular_graph_dataset import CrystalGraphDataset
+from datasets.crystal_graph_dataset import CrystalGraphDataset
 from tensorboardX import SummaryWriter
 from torchmetrics import MeanAbsoluteError
 from torcheval.metrics import R2Score
@@ -22,7 +22,7 @@ test_size = len(dataset) - train_size
 train_data = torch.utils.data.Subset(dataset, range(train_size))
 test_data = torch.utils.data.Subset(dataset, range(train_size, train_size + test_size))
 
-train_dataloader = DataLoader(train_data, batch_size=524, shuffle=True, num_workers=0)
+train_dataloader = DataLoader(train_data, batch_size=524, shuffle=False, num_workers=0)
 test_dataloader = DataLoader(test_data, batch_size=15759, shuffle=False, num_workers=0)
 
 class GCN(torch.nn.Module):

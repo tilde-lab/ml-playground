@@ -11,8 +11,8 @@ class CrystalGraphDataset(Dataset):
         super().__init__()
         self.transform = self.build_graph
         self.file_path = \
-            '/root/projects/ml-playground/data_massage/seebeck_coefficient_and_structure/data/'
-        self.excel_file_path = self.file_path + "I_C_PEER_INITIO.xlsx"
+            '/root/projects/ml-playground/data_massage/seebeck_coefficient_and_structure/data/20_03/'
+        self.excel_file_path = self.file_path + "ordered_str_1000.xlsx"
         self.data_excel = pd.read_excel(self.excel_file_path)
         self.data = self.data_excel.values.tolist()
 
