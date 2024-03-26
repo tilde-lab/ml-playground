@@ -17,6 +17,8 @@ if __name__ == "__main__":
 
     # cleaning after all data has been received to avoid missing a structure in cases where
     # disordered structure is found that cannot be ordered
-    result_dfrm = handler.just_uniq_phase_id(result_dfrm)
-    excel_file_path = file_path + file_name + ".xlsx"
-    result_dfrm.to_excel(excel_file_path, index=False)
+    # result_dfrm = handler.just_uniq_phase_id(result_dfrm)
+
+    csv_file_path = file_path + file_name + ".csv"
+    result_dfrm.to_csv(csv_file_path, index=False)
+

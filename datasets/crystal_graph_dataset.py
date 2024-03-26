@@ -11,10 +11,10 @@ class CrystalGraphDataset(Dataset):
         super().__init__()
         self.transform = self.build_graph
         self.file_path = \
-            '/root/projects/ml-playground/data_massage/seebeck_coefficient_and_structure/data/20_03/'
-        self.excel_file_path = self.file_path + "ordered_str_1000.xlsx"
-        self.data_excel = pd.read_excel(self.excel_file_path)
-        self.data = self.data_excel.values.tolist()
+            '/root/projects/ml-playground/data_massage/seebeck_coefficient_and_structure/data/26_3/'
+        self.excel_file_path = self.file_path + "ordered_str_200.csv"
+        self.data_csv = pd.read_csv(self.excel_file_path)
+        self.data = self.data_csv.values.tolist()
 
     def __len__(self):
         return len(self.data)
@@ -35,7 +35,7 @@ class CrystalGraphDataset(Dataset):
         Saves atom coordinates as node attributes, calculates the length of edges (distance between atoms).
         Graph is fully connected - all atoms are connected by edges.
         """
-        ph, formula, seebeck, entry, cell_abc_str, sg_n, basis_noneq, els_noneq = mol_data
+        ph, formula, seebeck, cell_abc_str, sg_n, basis_noneq, els_noneq = mol_data
         els_noneq = eval(els_noneq)
         basis_noneq = eval(basis_noneq)
 

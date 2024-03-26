@@ -12,5 +12,5 @@ if __name__ == "__main__":
         subject_of_request=1, max_value=200, min_value=-150, is_uniq_phase_id=False
     )
 
-    excel_file_path = file_path + file_name + ".xlsx"
-    seebeck_structure_dfrm.to_excel(excel_file_path, index=False)
+    excel_file_path = file_path + file_name + ".csv"
+    seebeck_structure_dfrm.to_csv(excel_file_path, index=False)
