@@ -81,7 +81,7 @@ class DataHandler:
             result = self.get_all_available_props(phases, data)
 
         elif subject_of_request == 3:
-            result = self.to_order_disordered_str(phases)
+            result = self.to_order_disordered_str(phases, is_uniq_phase_id)
 
         return result
 
@@ -112,17 +112,17 @@ class DataHandler:
 
         return res_dfrm
 
-    def to_order_disordered_str(self, phases: list):
+    def to_order_disordered_str(self, phases: list, is_uniq_phase_id=True):
         """
         Creates order in disordered structures.
         Returns pandas Dataframe with ordered structures.
         """
         # get disordered structures from db, save random structure for specific 'phase_id'
-        all_data_df = self.just_uniq_phase_id(
-            self.cleaning_trash_data(
+        all_data_df = self.cleaning_trash_data(
                 self.client_handler.make_request(is_structure=True, phases=phases), idx_check=5
-            )
         )
+        if is_uniq_phase_id:
+            all_data_df = self.just_uniq_phase_id(all_data_df)
 
         disordered_str = []
         for atomic_str in all_data_df.values.tolist():
@@ -253,20 +253,19 @@ class DataHandler:
         phases = set(dfrm['Phase'].tolist())
 
         # get structures for data with Seebeck coefficient
-        answer_df = self.client_handler.make_request(is_structure_for_seebeck=True, phases=phases)
+        answer_df = self.client_handler.make_request(is_structure=True, phases=phases)
 
         if is_uniq_phase_to_many_props:
             is_uniq_phase_id = False
 
-        if is_uniq_phase_id:
-            answer_df = self.just_uniq_phase_id(answer_df)
-
         dfrm.rename(columns={'Phase': 'phase_id'}, inplace=True)
-        data = pd.merge(answer_df, dfrm, on='phase_id', how='inner')
-
         # remove empty data, make refactoring
-        result = self.cleaning_trash_data(data, 6)
-        result = self.cleaning_trash_data(result, 4)
+        answer_df = self.cleaning_trash_data(answer_df, 5)
+        result = pd.merge(answer_df, dfrm, on='phase_id', how='inner')
+
+        if is_uniq_phase_id:
+            result = self.just_uniq_phase_id(result)
+
         result = self.data_structure_refactoring(result)
 
         if is_median_data:
@@ -275,16 +274,20 @@ class DataHandler:
         return result
 
     def data_structure_refactoring(self, data: DataFrame) -> DataFrame:
-        new_df = data.copy()
-        new_df['entry'] = data['Formula']
-        new_df['cell_abc'] = data['Seebeck coefficient']
-        new_df['sg_n'] = data['entry']
-        new_df['basis_noneq'] = data['cell_abc']
-        new_df['els_noneq'] = data['sg_n']
-        new_df['Formula'] = data['basis_noneq']
-        new_df['Seebeck coefficient'] = data['els_noneq']
-        new_df.columns = ["phase_id", 'Formula', 'Seebeck coefficient', 'entry',
-                          'cell_abc', 'sg_n', 'basis_noneq', 'els_noneq']
+        """
+        Refactoring in format: 'phase_id', 'Formula', 'Seebeck coefficient',
+        'cell_abc', 'sg_n', 'basis_noneq', 'els_noneq'
+        """
+        new_df = pd.DataFrame(
+            columns=['phase_id', 'Formula', 'Seebeck coefficient', 'cell_abc', 'sg_n', 'basis_noneq', 'els_noneq']
+        )
+        new_df['phase_id'] = data['phase_id']
+        new_df['Formula'] = data['Formula']
+        new_df['Seebeck coefficient'] = data['Seebeck coefficient']
+        new_df['cell_abc'] = data['cell_abc']
+        new_df['sg_n'] = data['sg_n']
+        new_df['basis_noneq'] = data['basis_noneq']
+        new_df['els_noneq'] = data['els_noneq']
 
         return new_df
 
