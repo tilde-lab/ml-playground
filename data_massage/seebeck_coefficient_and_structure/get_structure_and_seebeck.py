@@ -12,7 +12,7 @@ if __name__ == "__main__":
     phases = set(seebeck_dfrm['Phase'].tolist())
 
     # get structure and make it ordered
-    structures_dfrm = handler.to_order_disordered_str(phases)
+    structures_dfrm = handler.data_distributor(subject_of_request=3, phases=phases)
     result_dfrm = handler.add_seebeck_by_phase_id(seebeck_dfrm, structures_dfrm)
 
     excel_file_path = file_path + file_name + ".xlsx"
