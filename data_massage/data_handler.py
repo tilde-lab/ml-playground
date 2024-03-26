@@ -1,12 +1,15 @@
 from mpds_client import MPDSDataTypes
 import pandas as pd
+from pandas import DataFrame
 from database_handlers.MPDS.request_to_mpds import RequestMPDS
 from data_massage.calculate_median_value import calc_median_value
 from ase import Atoms
+
 # change path if another
 from metis_backend.metis_backend.structures.struct_utils import order_disordered
 
 class RequestTypes(object):
+    JUST_SEEBECK = 0
     STRUCTURE_AND_SEEBECK = 1
     ALL_DATA_FOR_PHASES_WITH_SEEBECK = 2
     TO_ORDER_DISORDERED = 3
@@ -33,7 +36,9 @@ class DataHandler:
             self.client_handler = RequestMPDS(dtype=dtype, api_key=api_key)
         else:
             self.client_handler = None
+        self.available_dtypes = [1, 4]
         self.dtype = dtype
+        self.api_key = api_key
 
     def data_distributor(
             self, subject_of_request: int, max_value=None, min_value=None, is_uniq_phase_id=True,
@@ -62,8 +67,12 @@ class DataHandler:
             Saves all structures for specific 'phase_id', while the Seebeck coefficient
             is only one for a specific 'phase_id'.
         """
+        if subject_of_request == 0:
+            result = self.just_seebeck(
+                max_value, min_value, is_uniq_phase_id
+            )
 
-        if subject_of_request == 1:
+        elif subject_of_request == 1:
             result = self.seebeck_and_structure(
                 max_value, min_value, is_uniq_phase_id, is_median_data, is_uniq_phase_to_many_props
             )
@@ -76,19 +85,60 @@ class DataHandler:
 
         return result
 
+    def just_seebeck(self, max_value: int, min_value: int, is_uniq_phase_id: bool) -> DataFrame:
+        """
+        Get Seebeck coefficient from db.
+        """
+        res_dfrm = pd.DataFrame(
+            columns=['Phase', 'Formula', 'Seebeck coefficient']
+        )
+
+        for data_type in self.available_dtypes:
+            self.client_handler = RequestMPDS(dtype=data_type, api_key=self.api_key)
+
+            dfrm = self.client_handler.make_request(is_seebeck=True)
+
+            # remove outliers in value of Seebeck coefficient
+            if max_value != None:
+                for index, row in dfrm.iterrows():
+                    if max_value < row['Seebeck coefficient'] or row['Seebeck coefficient'] < min_value:
+                        dfrm.drop(index, inplace=True)
+
+            res_dfrm = self.combine_data(dfrm, res_dfrm)
+
+        # leave only one phase_id value
+        if is_uniq_phase_id:
+           res_dfrm = self.just_uniq_phase_id(res_dfrm)
+
+        return res_dfrm
+
     def to_order_disordered_str(self, phases: list):
         """
         Creates order in disordered structures.
         Returns pandas Dataframe with ordered structures.
         """
-        # get disordered structures from db
-        answer = self.just_uniq_phase_id(self.client_handler.request_disordered(phases))
+        # get disordered structures from db, save random structure for specific 'phase_id'
+        all_data_df = self.just_uniq_phase_id(
+            self.cleaning_trash_data(
+                self.client_handler.make_request(is_structure=True, phases=phases), idx_check=5
+            )
+        )
+
+        disordered_str = []
+        for atomic_str in all_data_df.values.tolist():
+            if atomic_str and any([occ != 1 for occ in atomic_str[1]]):
+                disordered_str.append(atomic_str)
+
+        disordered_df = pd.DataFrame(
+            disordered_str,
+            columns=['phase_id', 'occs_noneq', 'cell_abc', 'sg_n', 'basis_noneq', 'els_noneq']
+        )
 
         result_list = []
         atoms_list = []
 
         # create Atoms objects
-        for index, row in answer.iterrows():
+        for index, row in disordered_df.iterrows():
             # info for Atoms obj
             disordered = {'disordered': {}}
 
@@ -108,19 +158,27 @@ class DataHandler:
         for i, crystal in enumerate(atoms_list):
             obj, error = order_disordered(crystal)
             if not error:
-                result_list.append([answer['phase_id'].tolist()[i], obj.get_cell_lengths_and_angles().tolist(),
-                                    answer['sg_n'].tolist()[i],
+                result_list.append([disordered_df['phase_id'].tolist()[i], obj.get_cell_lengths_and_angles().tolist(),
+                                    disordered_df['sg_n'].tolist()[i],
                                     obj.get_positions().tolist(), list(obj.symbols)])
             else:
                 print(error)
 
-        return pd.DataFrame(
+        new_ordered_df = pd.DataFrame(
             result_list,
             columns=['phase_id', 'cell_abc', 'sg_n', 'basis_noneq', 'els_noneq']
         )
 
+        result_df = self.change_disord_on_ord(all_data_df.values.tolist(), new_ordered_df.values.tolist())
 
-    def just_uniq_phase_id(self, df):
+        return result_df
+
+    def add_seebeck_by_phase_id(self, seebeck_df, structures_df) -> DataFrame:
+        seebeck_df = seebeck_df.rename(columns={'Phase':'phase_id'})
+        dfrm = pd.merge(seebeck_df, structures_df, on='phase_id', how='inner')
+        return dfrm
+
+    def just_uniq_phase_id(self, df: DataFrame) -> DataFrame:
         """
         Saves one example for a specific 'phase_id', deletes subsequent ones.
         """
@@ -131,22 +189,21 @@ class DataHandler:
         result_df = df[mask]
         return result_df
 
-    def cleaning_trash_data(self, df, idx_check=6, type_of_trash=[]):
+    def cleaning_trash_data(self, df: DataFrame, idx_check=5, type_of_trash=[]) -> DataFrame:
         """
         Deletes data with wrong information or empty data.
         """
         data = df.values.tolist()
-        data_res = [row for row in data if row[idx_check] != type_of_trash]
+        data_res = []
 
         for row in data:
-            if row[idx_check] != type_of_trash:
+            if row[idx_check] != type_of_trash and row[idx_check] != None:
                 data_res.append(row)
             else:
                 print('Removed garbage data:', row)
         data = pd.DataFrame(
-            data,
-            columns=["phase_id", "entry", "cell_abc", "sg_n", "basis_noneq",
-                     "els_noneq", "Formula", "Seebeck coefficient"]
+            data_res,
+            columns=["phase_id", "occs_noneq", "cell_abc", "sg_n", "basis_noneq", "els_noneq"]
         )
         return data
 
@@ -157,7 +214,7 @@ class DataHandler:
         ----------
         phases : list
             'Phase_id' for request
-        data : pandas DataFrame
+        data : DataFrame
             DataFrame which will merge with result of request. Merge by 'inner'
         """
         props_df = self.client_handler.make_request(phases=phases, all_prop_for_seebeck=True)
@@ -165,8 +222,9 @@ class DataHandler:
         return result_df
 
     def seebeck_and_structure(
-            self, max_value, min_value, is_uniq_phase_id, is_median_data, is_uniq_phase_to_many_props
-    ):
+            self, max_value: int, min_value: int, is_uniq_phase_id: bool, is_median_data: bool,
+            is_uniq_phase_to_many_props: bool
+    ) -> DataFrame:
         """
         Requests all items that have a Seebeck coefficient. Queries atomic structures for all 'phase_id',
         which have a Seebeck coefficient. Cleans up invalid and empty data.
@@ -189,17 +247,8 @@ class DataHandler:
         if is_median_data:
             is_uniq_phase_id = False
 
-        dfrm = self.client_handler.make_request(is_seebeck=True)
-
-        # remove outliers in value of Seebeck coefficient
-        if max_value != None:
-            for index, row in dfrm.iterrows():
-                if max_value < row['Seebeck coefficient'] or row['Seebeck coefficient'] < min_value:
-                    dfrm.drop(index, inplace=True)
-
-        # leave only one phase_id value
-        if is_uniq_phase_id:
-            dfrm = self.just_uniq_phase_id(dfrm)
+        # get seebeck
+        dfrm = self.just_seebeck(max_value, min_value, is_uniq_phase_id)
 
         phases = set(dfrm['Phase'].tolist())
 
@@ -225,7 +274,7 @@ class DataHandler:
 
         return result
 
-    def data_structure_refactoring(self, data):
+    def data_structure_refactoring(self, data: DataFrame) -> DataFrame:
         new_df = data.copy()
         new_df['entry'] = data['Formula']
         new_df['cell_abc'] = data['Seebeck coefficient']
@@ -239,36 +288,43 @@ class DataHandler:
 
         return new_df
 
-    def combine_data(self, data_f, data_s):
+    def combine_data(self, data_f: DataFrame, data_s: DataFrame) -> DataFrame:
         """  Simply connects 2 dataframes  """
         combined_df = pd.concat([data_f, data_s])
         return combined_df
 
-    def merge_seebeck_and_ordered_str(self, data_disord: list, ordered: list) -> list:
+    def change_disord_on_ord(self, data_disord: list, ordered: list) -> DataFrame:
         """
-        Create list with updated ordered values for disordered data. Other structures copy to new list
-        without changes.
+        Create DataFrame with updated ordered values for disordered data.
+        Other structures copy to new list without changes.
         Parameters
         ----------
         data_disord : list
-            Made of 'phase_id', 'Formula', 'Seebeck coefficient', 'entry', 'cell_abc',
-            'sg_n', 'basis_noneq', 'els_noneq'
+            Made of 'phase_id', 'occs_noneq', 'cell_abc', 'sg_n', 'basis_noneq', 'els_noneq'
         ordered : list
             Made of next columns 'phase_id', 'cell_abc', 'sg_n', 'basis_noneq', 'els_noneq'
         """
         update_data = []
+        loss_str = 0
 
         for dis_sample in data_disord:
             for i, ord_sample in enumerate(ordered):
                 if dis_sample[0] == ord_sample[0]:
-                    update_data.append([dis_sample[0], dis_sample[1], dis_sample[2], dis_sample[3],
-                                        ord_sample[1], ord_sample[2], ord_sample[3], ord_sample[4]])
+                    update_data.append(ord_sample)
                     break
                 elif i == len(ordered) - 1:
-                    update_data.append(dis_sample)
-        return update_data
+                    # check that data is really sorted
+                    if not (any([occ != 1 for occ in dis_sample[1]])):
+                        update_data.append([dis_sample[0], dis_sample[2], dis_sample[3], dis_sample[4], dis_sample[5]])
+                    else:
+                        # see errors occurred in 'to_order_disordered_str'
+                        loss_str += 1
+                        print(f'Missing {loss_str} structures that could not pass ordering')
 
-    def removing_properties_by_intersection(self, data, props_to_save: list):
+        dfrm = pd.DataFrame(update_data, columns=['phase_id', 'cell_abc', 'sg_n', 'basis_noneq', 'els_noneq'])
+        return dfrm
+
+    def removing_properties_by_intersection(self, data, props_to_save: list) -> DataFrame:
         columns_to_save = [
             'phase_id', 'Formula', 'Seebeck coefficient', 'entry', 'cell_abc', 'sg_n', 'basis_noneq', 'els_noneq'
         ]

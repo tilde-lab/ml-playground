@@ -1,36 +1,19 @@
-from data_prepearing.data_handler import DataHandler
-from mpds_client import MPDSDataTypes
-import random
-from data_prepearing.normalization.normalization import make_normalization
-import pandas as pd
+from data_massage.data_handler import DataHandler
 
 api_key = 'KEY'
-data_type = MPDSDataTypes.AB_INITIO
-subject_of_request = 1
-max_value = 1000
-min_value = -1000
-is_uniq_phase_id = True
-is_median_data = False
-is_uniq_phase_to_many_props = False
-file_path = '/Users/alina/PycharmProjects/ml-playground/data_prepearing/seebeck_coefficient_and_structure/data/'
-file_name = 'AB_INITIO_PEER_REV_uniq_phase'
-scaler_path = '/Users/alina/PycharmProjects/ml-playground/data_prepearing/normalization/scalers/'
+file_path = '/root/projects/ml-playground/data_massage/seebeck_coefficient_and_structure/data/26_3/'
+file_name = 'ordered_str_1000'
 
 if __name__ == "__main__":
-    handler = DataHandler(True, api_key, data_type)
+    handler = DataHandler(True, api_key)
 
-    file1 = "/Users/alina/PycharmProjects/ml-playground/data_prepearing/seebeck_coefficient_and_structure/data/AB_INITIO_uniq_phase_id.xlsx"
-    file2 = "/Users/alina/PycharmProjects/ml-playground/data_prepearing/seebeck_coefficient_and_structure/data/4_processed_structure_and_seebeck_uniq.xlsx"
+    # get Seebeck for PEER_REV and AB_INITIO
+    seebeck_dfrm = handler.data_distributor(subject_of_request=0, max_value=1000, min_value=-1000)
+    phases = set(seebeck_dfrm['Phase'].tolist())
 
-    data1 = pd.read_excel(file1)
-    data2 = pd.read_excel(file2)
+    # get structure and make it ordered
+    structures_dfrm = handler.to_order_disordered_str(phases)
+    result_dfrm = handler.add_seebeck_by_phase_id(seebeck_dfrm, structures_dfrm)
 
-    result = handler.combine_data(data1, data2)
-
-    random_number = str(random.randint(100000, 999999))
-    norm_result = make_normalization(
-        result, scaler_path, scaler_name=('scaler' + random_number)
-    )
-
-    excel_file_path = file_path + file_name + random_number + ".xlsx"
-    result.to_excel(excel_file_path, index=False)
+    excel_file_path = file_path + file_name + ".xlsx"
+    result_dfrm.to_excel(excel_file_path, index=False)

@@ -16,7 +16,7 @@ class RequestMPDS:
         self.dtype = dtype
         self.api_key = api_key
 
-    def make_request(self, is_seebeck=False, is_structure_for_seebeck=False, all_prop_for_seebeck=False, phases=None):
+    def make_request(self, is_seebeck=False, is_structure=False, all_prop=False, phases=None):
         """
         Requests data from the MPDS according to the input parms.
         Return DataFrame or dict.
@@ -28,29 +28,12 @@ class RequestMPDS:
             dfrm.drop(dfrm.columns[[2, 3, 4, 5]], axis=1, inplace=True)
             return dfrm
 
-        elif (
-                is_structure_for_seebeck and
-                (self.dtype == MPDSDataTypes.PEER_REVIEWED or self.dtype == MPDSDataTypes.MACHINE_LEARNING)
-        ):
-            # change flag on PEER_REVIEWED for getting structure
-            if self.dtype == MPDSDataTypes.MACHINE_LEARNING:
-                self.client = MPDSDataRetrieval(dtype=MPDSDataTypes.PEER_REVIEWED, api_key=self.api_key)
-
-            # get structures for data with Seebeck coefficient
-            answer_df = self.request_structure_by_client(phases)
-            return answer_df
-
-        elif is_structure_for_seebeck and self.dtype == MPDSDataTypes.AB_INITIO:
-            # df_https = self.request_structure_by_https(phases)
-
+        elif is_structure:
             self.client = MPDSDataRetrieval(dtype=MPDSDataTypes.PEER_REVIEWED, api_key=self.api_key)
-            df_answer = self.request_structure_by_client(phases)
-            # concat two answers
-            df_answer = pd.concat([df_answer, df_https])
+            df_by_client = self.request_structure_by_client(phases)
+            return df_by_client
 
-            return df_answer
-
-        elif all_prop_for_seebeck == True:
+        elif all_prop == True:
             new_df = pd.DataFrame(phases, columns=["phase_id"])
 
             with open('/root/projects/ml-playground/data_massage/props.json') as f:
@@ -108,7 +91,8 @@ class RequestMPDS:
                     continue
                 if phase == None or phase == 'nan':
                     print('INCORRECT phase in data:', answer)
-                result_sample = [phase, answer["immutable_id"]]
+                # there are no info about disordered, so save '1'
+                result_sample = [phase, answer[1]]
                 result_sample.append(answer['lattice_vectors'])
                 result_sample.append(1)
                 result_sample.append(answer['cartesian_site_positions'])
@@ -121,39 +105,17 @@ class RequestMPDS:
             print(f'Got {len(results)} hits')
 
         answer_df = pd.DataFrame(results,
-                                 columns=["phase_id", "entry", "cell_abc", "sg_n", "basis_noneq", "els_noneq"])
+                                 columns=["phase_id", "occs_noneq", "cell_abc", "sg_n", "basis_noneq", "els_noneq"])
         return answer_df
 
     def request_structure_by_client(self, phases):
         answer = self.client.get_data(
             {"props": "atomic structure"},
             phases=phases,
-            fields={'S': ["phase_id", "entry", "cell_abc", "sg_n", "basis_noneq", "els_noneq"]}
+            fields={'S': ["phase_id", "occs_noneq", "cell_abc", "sg_n", "basis_noneq", "els_noneq"]}
         )
-        answer_df = pd.DataFrame(answer, columns=["phase_id", "entry", "cell_abc", "sg_n", "basis_noneq", "els_noneq"])
+        answer_df = pd.DataFrame(answer, columns=["phase_id", "occs_noneq", "cell_abc", "sg_n", "basis_noneq", "els_noneq"])
 
         return answer_df
 
-    def request_disordered(self, phases):
-        disordered_str = []
-        for atomic_str in self.client.get_data(
-                {"props": "atomic structure"},
-            phases=phases,
-            fields={'S': [
-                    'phase_id',
-                    'occs_noneq',  # non-disordered phases may still have != 1
-                    'cell_abc',
-                    'sg_n',
-                    'basis_noneq',
-                    'els_noneq'
-                ]}):
-            if atomic_str and any([occ != 1 for occ in atomic_str[1]]):
-                disordered_str.append(atomic_str)
-
-        df = pd.DataFrame(
-            disordered_str,
-            columns=['phase_id', 'occs_noneq', 'cell_abc', 'sg_n', 'basis_noneq', 'els_noneq']
-        )
-
-        return df
 
