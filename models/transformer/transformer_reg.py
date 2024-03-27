@@ -24,7 +24,7 @@ train_size = int(0.9 * len(dataset))
 test_size = len(dataset) - train_size
 train_data = torch.utils.data.Subset(dataset, range(train_size))
 test_data = torch.utils.data.Subset(dataset, range(train_size, train_size + test_size))
-train_dataloader = DataLoader(train_data, batch_size=524, shuffle=True, num_workers=0)
+train_dataloader = DataLoader(train_data, batch_size=64, shuffle=True, num_workers=0)
 test_dataloader = DataLoader(test_data, batch_size=15759, shuffle=False, num_workers=0)
 
 class TransformerModel(nn.Module):
@@ -32,7 +32,8 @@ class TransformerModel(nn.Module):
     def __init__(self, n_feature, heads):
         super().__init__()
 
-        encoder_layer = nn.TransformerEncoderLayer(d_model=n_feature, nhead=heads)
+        encoder_layer = nn.TransformerEncoderLayer(d_model=n_feature, nhead=heads, batch_first=True,
+                                                   activation="gelu", dropout=0)
         # size (1, 1, n_feature)
         self.agg_token = torch.rand((1, 1, n_feature))
         self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=6)
@@ -59,10 +60,9 @@ class TransformerModel(nn.Module):
 
             # get token embedding
             token_emb = x[:,0]
-            emb_list.append(token_emb.tolist())
+            emb_list.append(token_emb)
 
-        x = torch.tensor(emb_list)
-        x = self.ff(x)
+        x = self.ff(emb_list[0])
 
         return x
 
@@ -109,7 +109,7 @@ for epoch in tqdm(range(150)):
     if epoch % 10 == 0:
         torch.save(
             model.state_dict(),
-            f'/root/projects/ml-playground/models/transformer/weights/weights000007_02.pth'
+            f'/root/projects/ml-playground/models/transformer/weights/weights01_01.pth'
         )
 
 model.eval()
@@ -139,7 +139,7 @@ with torch.no_grad():
 mse = total_loss / num_samples
 torch.save(
     model.state_dict(),
-    f'/root/projects/ml-playground/models/transformer/weights/weights000007_02.pth'
+    f'/root/projects/ml-playground/models/transformer/weights/weights01_01.pth'
 )
 
 print("R2: ", r2_res, " MAE: ", mae_result)
