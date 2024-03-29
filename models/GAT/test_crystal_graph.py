@@ -15,7 +15,7 @@ r2 = R2Score()
 
 dataset = CrystalGraphDataset()
 
-train_size = int(0.995 * len(dataset))
+train_size = int(0.9 * len(dataset))
 test_size = len(dataset) - train_size
 train_data = torch.utils.data.Subset(dataset, range(train_size))
 test_data = torch.utils.data.Subset(dataset, range(train_size, train_size + test_size))

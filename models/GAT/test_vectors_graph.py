@@ -14,7 +14,7 @@ r2 = R2Score()
 mean_absolute_error = MeanAbsoluteError()
 
 dataset = CrystalGraphVectorsDataset()
-train_size = int(0.995 * len(dataset))
+train_size = int(0.9 * len(dataset))
 test_size = len(dataset) - train_size
 train_data = torch.utils.data.Subset(dataset, range(train_size))
 test_data = torch.utils.data.Subset(dataset, range(train_size, train_size + test_size))
