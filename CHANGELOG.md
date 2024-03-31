@@ -15,4 +15,12 @@ All notable changes to this project will be documented in this file.
 ## 2024.01.29 - 2024.02.29
 - Added example for using [Pcrystal](https://github.com/tilde-lab/ml-playground/commit/4fdac2c4e5c5fec08f989c2eb8d3f393d6f59e7f) and [Metis-client](https://github.com/tilde-lab/ml-playground/commit/ff607197b75dbf843226191f17cdd51604a7fdb9).
 - Added [data processing from MPDS](https://github.com/tilde-lab/ml-playground/commit/78b2c55af381762ba40a76a551e40495ee678ed2).
-- Added [GCN model](https://github.com/tilde-lab/ml-playground/blob/master/models/GCN/gcn_regression_model.py). Trained on several types of data to predict Seebeck coefficient. 
+- Added [GCN model](https://github.com/tilde-lab/ml-playground/blob/master/models/GCN/gcn_regression_model.py). Trained on several types of data to predict Seebeck coefficient.
+
+## 2024.03.01 - 2024.03.29
+- Added and trained [GAT](https://github.com/tilde-lab/ml-playground/commit/61e73261661967ab63af72c7ed33dfc0636ab19e), [Trancformer](https://github.com/tilde-lab/ml-playground/commit/ece88e86203bfdb33dc5dc0a0f43f9c7bb8e64a3) models.
+- Trained GCN models to predict Seebeck coefficient.
+- Added getting and preparation AB_INITIO structures from MPDS.
+- Added [ordering to disordered structures](https://github.com/tilde-lab/ml-playground/blob/master/data_massage/seebeck_coefficient_and_structure/structure_to_vectors.py).
+- Added [CrystalGraphVectorsDataset](https://github.com/tilde-lab/ml-playground/blob/master/datasets/vectors_graph_dataset.py).
+
