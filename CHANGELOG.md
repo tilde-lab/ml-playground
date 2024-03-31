@@ -18,7 +18,7 @@ All notable changes to this project will be documented in this file.
 - Added [GCN model](https://github.com/tilde-lab/ml-playground/blob/master/models/GCN/gcn_regression_model.py). Trained on several types of data to predict Seebeck coefficient.
 
 ## 2024.03.01 - 2024.03.29
-- Added and trained [GAT](https://github.com/tilde-lab/ml-playground/commit/61e73261661967ab63af72c7ed33dfc0636ab19e), [Trancformer](https://github.com/tilde-lab/ml-playground/commit/ece88e86203bfdb33dc5dc0a0f43f9c7bb8e64a3) models.
+- Added and trained [GAT](https://github.com/tilde-lab/ml-playground/commit/61e73261661967ab63af72c7ed33dfc0636ab19e), [Transformer](https://github.com/tilde-lab/ml-playground/commit/ece88e86203bfdb33dc5dc0a0f43f9c7bb8e64a3) models.
 - Trained GCN models to predict Seebeck coefficient.
 - Added getting and preparation AB_INITIO structures from MPDS.
 - Added [ordering to disordered structures](https://github.com/tilde-lab/ml-playground/blob/master/data_massage/seebeck_coefficient_and_structure/structure_to_vectors.py).
