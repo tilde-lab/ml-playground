@@ -340,5 +340,21 @@ class DataHandler:
         new_df = new_df.dropna()
         return new_df
 
+    def to_cut_structure(self, data, len_str=16):
+        update_data = []
+        colum = [c for c in data.columns]
+
+        for row in data.values.tolist():
+            if len(eval(row[6])) >= len_str:
+                new_row = row.copy()
+                new_row[6] = eval(row[6])[:len_str]
+                new_row[5] = eval(row[5])[:len_str]
+                update_data.append(new_row)
+            else:
+                continue
+
+        update_dfrm = pd.DataFrame(update_data, columns=colum)
+        return update_dfrm
+
 
 

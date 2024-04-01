@@ -6,30 +6,51 @@ from turicreate import SFrame
 from torchmetrics import MeanAbsoluteError
 from torcheval.metrics import R2Score
 import torch
+from datasets.crystal_graph_dataset import CrystalGraphDataset
 import pandas as pd
+from torch_geometric.loader import DataLoader
 
 mean_absolute_error = MeanAbsoluteError()
 metric = R2Score()
 
-# Crystal in vectors format
-total = pd.read_csv(
-    '/root/projects/ml-playground/data_massage/seebeck_coefficient_and_structure/data/26_3/rep_vectors_str_200.csv'
-)
-seebeck = pd.read_csv(
-    '/root/projects/ml-playground/data_massage/seebeck_coefficient_and_structure/data/26_3/seebeck_200.csv'
-)
-total = pd.concat([seebeck["Seebeck coefficient"], total], axis=1)
-features = ["atom", "distance"]
+dataset = CrystalGraphDataset(cut=True)
 
-train_size = int(0.9 * len(total))
-test_size = len(total) - train_size
+train_size = int(0.9 * len(dataset))
+test_size = len(dataset) - train_size
+train_data = torch.utils.data.Subset(dataset, range(train_size))
+test_data = torch.utils.data.Subset(dataset, range(train_size, train_size + test_size))
+train_dataloader = DataLoader(train_data, batch_size=1, shuffle=False, num_workers=0)
+test_dataloader = DataLoader(test_data, batch_size=1, shuffle=False, num_workers=0)
 
-train = total.iloc[:train_size]
-test = total.iloc[test_size:]
+tr, val = [], []
+cnt = 0
+
+for d, y in train_dataloader:
+    tr.append([[], [], [], [], y.tolist()[0]])
+    for row in d.x.tolist():
+        tr[cnt][0].append(row[0])
+        tr[cnt][1].append(row[1])
+        tr[cnt][2].append(row[2])
+        tr[cnt][3].append(row[3])
+    cnt += 1
+
+
+cnt = 0
+for d, y in test_dataloader:
+    val.append([[], [], [], [], y.tolist()[0]])
+    for row in d.x.tolist():
+        val[cnt][0].append(row[0])
+        val[cnt][1].append(row[1])
+        val[cnt][2].append(row[2])
+        val[cnt][3].append(row[3])
+    cnt += 1
+    
+train = pd.DataFrame(tr, columns=["n", "x", "y", "z", "Seebeck coefficient"])
+test = pd.DataFrame(val, columns=["n", "x", "y", "z", "Seebeck coefficient"])
+features = ["n", "x", "y", "z"]
 
 # LINEAR REGRESSION MODEL
-train_r = SFrame(train)
-test_r = SFrame(test)
+train_r, test_r = SFrame(train), SFrame(test)
 model_linear = tc.linear_regression.create(
     train_r, target="Seebeck coefficient", features=features
 )
