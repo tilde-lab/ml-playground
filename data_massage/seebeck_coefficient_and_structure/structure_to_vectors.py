@@ -35,7 +35,7 @@ def get_bv_descriptor(ase_obj, kappa=None, overreach=False):
 
     return np.array([elements, positions])
 
-def to_cat_vectors_struct(path_to_save, file_path):
+def to_cut_vectors_struct(path_to_save, file_path):
     data_csv = pd.read_csv(file_path)
     d_list = data_csv.values.tolist()
 
@@ -44,14 +44,14 @@ def to_cat_vectors_struct(path_to_save, file_path):
 
     for item in d_list:
         crystal = Atoms(symbols=eval(item[6]), positions=eval(item[5]), cell=eval(item[3]))
-        vectors = get_bv_descriptor(crystal)
-        if len(vectors[0]) < 32:
+        vectors = get_bv_descriptor(crystal, kappa=40)
+        if len(vectors[0]) < 100:
             continue
-        elif len(vectors[0]) == 32:
+        elif len(vectors[0]) == 100:
             objs.append(vectors)
             seebeck.append(item[2])
         else:
-            objs.append(vectors[:, :32])
+            objs.append(vectors[:, :100])
             seebeck.append(item[2])
 
 
@@ -59,10 +59,11 @@ def to_cat_vectors_struct(path_to_save, file_path):
     dfrm.to_csv(path_to_save+'vectors_str_200.csv', index=False)
 
     dfrm_s = pd.DataFrame(seebeck, columns=['Seebeck coefficient'])
-    dfrm_s.to_csv(path_to_save+'not_rep_seebeck_200.csv', index=False)
+    dfrm_s.to_csv(path_to_save+'rep_seebeck_200.csv', index=False)
 
-path = '/root/projects/ml-playground/data_massage/seebeck_coefficient_and_structure/data/26_3/ordered_str_200.csv'
-path_to_save = '/root/projects/ml-playground/data_massage/seebeck_coefficient_and_structure/data/26_3/'
+path = \
+    '/root/projects/ml-playground/data_massage/seebeck_coefficient_and_structure/data/26_3/median_rep_ordered_str_200.csv'
+path_to_save = '/root/projects/ml-playground/data_massage/seebeck_coefficient_and_structure/data/01_04/'
 
-to_cat_vectors_struct(file_path=path, path_to_save=path_to_save)
+to_cut_vectors_struct(file_path=path, path_to_save=path_to_save)
 print()
