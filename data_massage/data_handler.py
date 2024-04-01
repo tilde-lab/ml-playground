@@ -174,7 +174,10 @@ class DataHandler:
         return result_df
 
     def add_seebeck_by_phase_id(self, seebeck_df, structures_df) -> DataFrame:
-        seebeck_df = seebeck_df.rename(columns={'Phase':'phase_id'})
+        try:
+            seebeck_df = seebeck_df.rename(columns={'Phase':'phase_id'})
+        except:
+            pass
         dfrm = pd.merge(seebeck_df, structures_df, on='phase_id', how='inner')
         return dfrm
 
