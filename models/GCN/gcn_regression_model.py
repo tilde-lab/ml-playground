@@ -49,14 +49,14 @@ if __name__ == '__main__':
     test_dataloader = DataLoader(test_data, batch_size=15759, shuffle=False, num_workers=0)
 
     device = torch.device('cpu')
-    model = GCN(n_hid=16).to(device)
+    model = GCN(n_hid=20).to(device)
 
     # model.load_state_dict(torch.load(f'/root/projects/ml-playground/models/GCN/weights/weights02_01.pth'))
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.00801680207808625, weight_decay=5e-4)
 
     model.train()
-    for epoch in tqdm(range(30)):
+    for epoch in tqdm(range(8)):
         mean_loss = 0
         cnt = 0
         for data, y in train_dataloader:
@@ -71,7 +71,7 @@ if __name__ == '__main__':
         if epoch % 1 == 0:
             torch.save(
                 model.state_dict(),
-                f'/root/projects/ml-playground/models/GCN/weights/weights03_01.pth'
+                f'/root/projects/ml-playground/models/GCN/weights/weights07_01.pth'
             )
 
     model.eval()
@@ -95,7 +95,7 @@ if __name__ == '__main__':
 
     torch.save(
         model.state_dict(),
-        f'/root/projects/ml-playground/models/GCN/weights/weights03_01.pth'
+        f'/root/projects/ml-playground/models/GCN/weights/weights07_01.pth'
     )
 
     print("R2: ", r2_res, " MAE: ", mae_result)

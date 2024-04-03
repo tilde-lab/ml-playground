@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from torch_geometric.nn import GCNConv, Linear
 from torch_geometric.utils import scatter
 from tqdm import tqdm
-from datasets.crystal_graph_dataset import CrystalGraphDataset
+from datasets.vectors_graph_dataset import CrystalGraphVectorsDataset
 import numpy as np
 from torchmetrics import MeanAbsoluteError
 from torcheval.metrics import R2Score
@@ -19,7 +19,7 @@ class GCN(torch.nn.Module):
 
   def __init__(self, n_hidden, activation):
       super().__init__()
-      self.conv1 = GCNConv(4, n_hidden)
+      self.conv1 = GCNConv(2, n_hidden)
       self.conv2 = GCNConv(n_hidden, n_hidden)
       self.layer3 = Linear(n_hidden, 1)
       if activation == 'elu':
@@ -34,7 +34,7 @@ class GCN(torch.nn.Module):
   def forward(self, data):
       x, edge_index = data.x, data.edge_index.type(torch.int64)
 
-      x = self.conv1(x, edge_index)
+      x = self.conv1(x.float(), edge_index)
       x = self.activ(x)
       x = F.dropout(x, training=self.training)
 
@@ -72,7 +72,7 @@ def train(model, opt, lr, b_size, max_ep, train_data):
     print("Training done ")
     return model
 
-def test(model, test_dataloader):
+def val(model, test_dataloader):
     r2 = R2Score()
     mae = MeanAbsoluteError()
 
@@ -113,13 +113,13 @@ def create_params(seed=1):
     """
     rnd = np.random.RandomState(seed)
 
-    n_hidden = rnd.randint(6, 32)
+    n_hidden = rnd.randint(4, 32)
     activation = rnd.choice(['leaky_relu', 'relu', 'elu', 'tanh'])
 
     opt = 'adam' # Adam is better than other
-    lr = rnd.uniform(low=0.001, high=0.10)
-    b_size = rnd.randint(64, 1024)
-    max_ep = rnd.randint(30, 35)
+    lr = rnd.uniform(low=0.001, high=0.01)
+    b_size = 64
+    max_ep = rnd.randint(5, 10)
 
     return (n_hidden, activation, opt, lr, b_size, max_ep)
 
@@ -143,7 +143,7 @@ def search_params(test_data, train_data):
 
         model.eval()
         test_dataloader = DataLoader(test_data, batch_size=15759, shuffle=False, num_workers=0)
-        mae_result, r2_res, mse = test(model, test_dataloader)
+        mae_result, r2_res, mse = val(model, test_dataloader)
         result[i].append([mae_result, r2_res, mse])
         print(f"MAE: {mae_result}, R2: {r2_res}, MSE: {mse}")
 
@@ -152,7 +152,7 @@ def search_params(test_data, train_data):
 def main():
     print("\nBegin hyperparameter random search ")
 
-    dataset = CrystalGraphDataset()
+    dataset = CrystalGraphVectorsDataset()
 
     train_size = int(0.9 * len(dataset))
     test_size = len(dataset) - train_size
