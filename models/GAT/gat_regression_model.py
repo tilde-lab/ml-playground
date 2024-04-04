@@ -13,10 +13,10 @@ from torcheval.metrics import R2Score
 
 class GAT(torch.nn.Module):
   """Graph Attention Network"""
-  def __init__(self, in_ch, heads=2):
+  def __init__(self, in_ch, heads=1):
       super().__init__()
-      self.conv1 = GATv2Conv(in_ch, 16, heads=heads, edge_dim=1)
-      self.conv2 = GATv2Conv(16 * heads, 8, heads=1, edge_dim=1)
+      self.conv1 = GATv2Conv(in_ch, 8, heads=heads, edge_dim=1)
+      self.conv2 = GATv2Conv(8 * heads, 8, heads=1, edge_dim=1)
       self.layer3 = Linear(8, 1)
 
   def forward(self, data):
@@ -30,7 +30,6 @@ class GAT(torch.nn.Module):
         x.float(), edge_index=edge_index, edge_attr=edge_attr
     )
     x = F.elu(x)
-    x = F.dropout(x, p=0.6, training=self.training)
 
     x = self.conv2(x, edge_index, edge_attr)
     x = F.elu(x)
@@ -54,14 +53,14 @@ if __name__ == '__main__':
     train_dataloader = DataLoader(train_data, batch_size=64, shuffle=True, num_workers=0)
     test_dataloader = DataLoader(test_data, batch_size=524, shuffle=False, num_workers=0)
 
-    device = torch.device('cpu')
+    device = torch.device('cuda')
     model = GAT(in_ch=2).to(device)
-    model.load_state_dict(torch.load(f'/root/projects/ml-playground/models/GAT/weights/weights01_03.pth'))
+    # model.load_state_dict(torch.load(r'C:\Users\cherniak\PycharmProjects\ml-playground\models\GAT\weights\weights03.pth'))
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001, weight_decay=5e-4)
 
     model.train()
-    for epoch in tqdm(range(100)):
+    for epoch in tqdm(range(5)):
         mean_loss = 0
         cnt = 0
         for data, y in train_dataloader:
@@ -75,7 +74,7 @@ if __name__ == '__main__':
         print(f'--------Mean loss for epoch {epoch} is {mean_loss/cnt}--------')
         torch.save(
             model.state_dict(),
-            f'/root/projects/ml-playground/models/GAT/weights/weights01_03_2.pth'
+            r'C:\Users\cherniak\PycharmProjects\ml-playground\models\GAT\weights\weights04.pth'
         )
 
     model.eval()
@@ -97,7 +96,7 @@ if __name__ == '__main__':
 
     torch.save(
         model.state_dict(),
-        f'/root/projects/ml-playground/models/GAT/weights/weights01_03_2.pth'
+        r'C:\Users\cherniak\PycharmProjects\ml-playground\models\GAT\weights\weights04.pth'
     )
 
     print("R2: ", r2_res, " MAE: ", mae_result, "Pred from", pred.min(), " to ", pred.max())
