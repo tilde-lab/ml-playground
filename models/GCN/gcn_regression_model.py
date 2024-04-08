@@ -11,29 +11,28 @@ from torcheval.metrics import R2Score
 
 
 class GCN(torch.nn.Module):
-  """Graph Convolutional Network"""
+     """Graph Convolutional Network"""
+     def __init__(self, n_hid):
+         super().__init__()
+         self.conv1 = GCNConv(2, n_hid)
+         self.conv2 = GCNConv(n_hid, n_hid)
+         self.layer3 = Linear(n_hid, 1)
+         self.activ = F.elu
 
-  def __init__(self, n_hid):
-      super().__init__()
-      self.conv1 = GCNConv(2, n_hid)
-      self.conv2 = GCNConv(n_hid, n_hid)
-      self.layer3 = Linear(n_hid, 1)
-      self.activ = F.elu
+     def forward(self, data):
+         x, edge_index = data.x, data.edge_index.type(torch.int64)
 
-  def forward(self, data):
-      x, edge_index = data.x, data.edge_index.type(torch.int64)
+         x = self.conv1(x.float(), edge_index)
+         x = self.activ(x)
+         x = F.dropout(x, training=self.training)
 
-      x = self.conv1(x.float(), edge_index)
-      x = self.activ(x)
-      x = F.dropout(x, training=self.training)
+         x = self.conv2(x, edge_index)
+         x = self.activ(x)
 
-      x = self.conv2(x, edge_index)
-      x = self.activ(x)
+         x = scatter(x, data.batch, dim=0, reduce='mean')
 
-      x = scatter(x, data.batch, dim=0, reduce='mean')
-
-      x = self.layer3(x)
-      return x
+         x = self.layer3(x)
+         return x
 
 if __name__ == '__main__':
     r2 = R2Score()
@@ -49,14 +48,14 @@ if __name__ == '__main__':
     test_dataloader = DataLoader(test_data, batch_size=15759, shuffle=False, num_workers=0)
 
     device = torch.device('cpu')
-    model = GCN(n_hid=20).to(device)
+    model = GCN(n_hid=8).to(device)
 
     # model.load_state_dict(torch.load(f'/root/projects/ml-playground/models/GCN/weights/weights02_01.pth'))
 
     optimizer = torch.optim.Adam(model.parameters(), lr=0.00801680207808625, weight_decay=5e-4)
 
     model.train()
-    for epoch in tqdm(range(8)):
+    for epoch in tqdm(range(20)):
         mean_loss = 0
         cnt = 0
         for data, y in train_dataloader:
@@ -67,12 +66,13 @@ if __name__ == '__main__':
             loss.backward()
             optimizer.step()
             mean_loss += loss
-        print(f'--------Mean loss for epoch {epoch} is {mean_loss/cnt}--------')
-        if epoch % 1 == 0:
-            torch.save(
-                model.state_dict(),
-                f'/root/projects/ml-playground/models/GCN/weights/weights07_01.pth'
-            )
+            r2.update(torch.tensor(torch.tensor(out.tolist())).reshape(-1),
+                      torch.tensor(y.tolist()))
+        print(f'--------Mean loss for epoch {epoch} is {mean_loss / cnt}--------R2 is {r2.compute()}')
+        torch.save(
+            model.state_dict(),
+            f'/root/projects/ml-playground/models/GCN/weights/weights12_01.pth'
+        )
 
     model.eval()
     total_loss = 0
@@ -95,8 +95,8 @@ if __name__ == '__main__':
 
     torch.save(
         model.state_dict(),
-        f'/root/projects/ml-playground/models/GCN/weights/weights07_01.pth'
+        f'/root/projects/ml-playground/models/GCN/weights/weights12_01.pth'
     )
 
-    print("R2: ", r2_res, " MAE: ", mae_result)
+    print("R2: ", r2_res, " MAE: ", mae_result, "Pred from", pred.min(), " to ", pred.max())
 

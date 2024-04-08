@@ -49,6 +49,7 @@ class GAT(torch.nn.Module):
         return x
 
     def fit(self, model, train_dataloader, optimizer, device):
+        r2 = R2Score()
         model.train()
         for epoch in tqdm(range(5)):
             mean_loss = 0
@@ -61,10 +62,12 @@ class GAT(torch.nn.Module):
                 loss.backward()
                 optimizer.step()
                 mean_loss += loss
-        print(f'--------Mean loss for epoch {epoch} is {mean_loss / cnt}--------')
+                r2.update(torch.tensor(torch.tensor(out.tolist())).reshape(-1),
+                          torch.tensor(y.tolist()))
+        print(f'--------Mean loss for epoch {epoch} is {mean_loss / cnt}--------R2 is {r2.compute()}')
         torch.save(
             model.state_dict(),
-            f'/root/projects/ml-playground/models/GAT/weights/weights04_02.pth'
+            f'/root/projects/ml-playground/models/GAT/weights/weights12_01.pth'
         )
     def val(self, model, test_dataloader, device):
         r2 = R2Score()
@@ -109,6 +112,6 @@ if __name__ == '__main__':
 
     torch.save(
         model.state_dict(),
-        f'/root/projects/ml-playground/models/GAT/weights/weights02_02.pth'
+        f'/root/projects/ml-playground/models/GAT/weights/weights12_01.pth'
     )
 
