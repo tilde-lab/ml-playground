@@ -30,11 +30,12 @@ for row in sorted(data):
             cnt += 1
 
 
-pd.DataFrame(new_list_seeb, columns=['Seebeck coefficient']).to_csv(
-    '/root/projects/ml-playground/data_massage/seebeck_coefficient_and_structure/data/01_04/under_seeb_200.csv',
-    index=False
-)
-pd.DataFrame(new_list_str, columns=['atom', 'distance']).to_csv(
-    '/root/projects/ml-playground/data_massage/seebeck_coefficient_and_structure/data/01_04/under_str_200.csv',
-    index=False
-)
+seeb_df = pd.DataFrame(new_list_seeb, columns=['Seebeck coefficient'])
+str_df = pd.DataFrame(new_list_str, columns=['atom', 'distance'])
+shuffle_df = pd.concat([seeb_df, str_df], axis=1).sample(frac=1).reset_index(drop=True)
+
+df_seebeck = shuffle_df.iloc[:,:1]
+df_structs = shuffle_df.iloc[:,1:]
+
+df_seebeck.to_csv('/root/projects/ml-playground/data_massage/seebeck_coefficient_and_structure/data/01_04/under_seeb_200.csv', index=False)
+df_structs.to_csv('/root/projects/ml-playground/data_massage/seebeck_coefficient_and_structure/data/01_04/under_str_200.csv', index=False)
