@@ -19,10 +19,9 @@ test_data = torch.utils.data.Subset(dataset, range(train_size, train_size + test
 test_dataloader = DataLoader(test_data, batch_size=4000, shuffle=False, num_workers=0)
 
 device = torch.device('cpu')
-model = GCN(n_hid=16).to(device)
-model.load_state_dict(torch.load(f'/root/projects/ml-playground/models/GCN/weights/weights02_02.pth'))
+model = GCN(n_hid=8).to(device)
+model.load_state_dict(torch.load(f'/root/projects/ml-playground/models/GCN/weights/weights12_04.pth'))
 
-optimizer = torch.optim.Adam(model.parameters(), lr=0.01, weight_decay=5e-4)
 loss_list = []
 
 model.eval()

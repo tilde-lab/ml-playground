@@ -2,3 +2,7 @@ mpds_client
 ase
 turicreate
 metis-backend
+smogn
+pandas
+numpy
+torch
