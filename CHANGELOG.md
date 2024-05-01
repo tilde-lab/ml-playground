@@ -24,3 +24,9 @@ All notable changes to this project will be documented in this file.
 - Added [ordering to disordered structures](https://github.com/tilde-lab/ml-playground/blob/master/data_massage/seebeck_coefficient_and_structure/structure_to_vectors.py).
 - Added [CrystalGraphVectorsDataset](https://github.com/tilde-lab/ml-playground/blob/master/datasets/vectors_graph_dataset.py).
 
+## 2024.03.30 - 2024.04.29
+- Complete refactoring done, updated structure in the [ml-selection repo](https://github.com/tilde-lab/ml-selection/commits/master/).
+- Added tests.
+- Added processing plyhedra. Added Polyhedra dataset. Trained models on it.
+- Added CNN model.
+
